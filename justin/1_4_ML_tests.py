@@ -12,7 +12,7 @@ plt.style.use('ggplot')
 
 
 
-save_path = './models/StepRamp.pth'
+save_path = './nn_models/StepRamp.pth'
 checkpoint = torch.load(save_path, weights_only=False)
 model = StepRampClassifier(input_dim=300)  # Use the same architecture as before
 model.load_state_dict(checkpoint['model_state_dict'])

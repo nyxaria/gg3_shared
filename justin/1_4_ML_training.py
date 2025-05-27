@@ -220,7 +220,7 @@ plt.show()
 
 
 # Save to a specific folder in Drive
-save_path = './models/StepRamp.pth'
+save_path = './nn_models/StepRamp.pth'
 torch.save({
     'model_state_dict': model.state_dict(),
     'optimizer_state_dict': optimizer.state_dict(),
