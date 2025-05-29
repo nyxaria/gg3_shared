@@ -103,7 +103,10 @@ class RampModelHMM:
         edges[1:-1] = self.x_values[:-1] + bin_width_internal / 2.0
         return edges
 
-    def _calculate_initial_distribution(self):
+    def _calculate_initial_distribution(self, T=None):
+
+        if T is not None:
+            self.dt = 1.0/T
 
         pi_values = np.zeros(self.K)
         mu_init = self.x0
@@ -126,7 +129,10 @@ class RampModelHMM:
         pi = pi_values / np.sum(pi_values)
         return pi
 
-    def _calculate_transition_matrix(self):
+    def _calculate_transition_matrix(self, T=None):
+        if T is not None:
+            self.dt = 1.0/T
+
         T_matrix = np.zeros((self.K, self.K))
         std_transition = self.sigma * np.sqrt(self.dt)
         edges = self._get_bin_edges()
@@ -158,7 +164,7 @@ class RampModelHMM:
         
         return T_matrix
 
-    def simulate(self, Ntrials=1, T=100, get_rate=True):
+    def simulate(self, Ntrials=1, T=100, get_rate=True, return_state_indices=False):
         """
         :param Ntrials: (int) number of trials
         :param T: (int) duration of each trial in number of time-steps.
@@ -169,6 +175,9 @@ class RampModelHMM:
         xs:     shape = (Ntrial, T); xs[j] is the latent variable time-series x_t in trial j
         rates:  shape = (Ntrial, T); rates[j] is the rate time-series, r_t, in trial j (returned only if get_rate=True)
         """
+
+        # return state indices: will return state_indices in place of xs
+
         self.dt = 1.0 / T
         
         init_distribution = self._calculate_initial_distribution()
@@ -192,6 +201,9 @@ class RampModelHMM:
         spikes = np.zeros_like(rates, dtype=int)
         for i in range(Ntrials):
             spikes[i,:] = self.emit(rates[i,:])
+
+        if return_state_indices:
+            xs = state_indices
 
         if get_rate:
             return spikes, xs, rates
