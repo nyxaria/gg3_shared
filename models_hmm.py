@@ -2,6 +2,7 @@ import numpy as np
 import numpy.random as npr
 
 from scipy.stats import norm
+from scipy.stats import nbinom
 
 def lo_histogram(x, bins):
     """
@@ -27,6 +28,191 @@ def gamma_isi_point_process(rate, shape):
     y, _ = lo_histogram(gs, sum_r_t)
 
     return y
+
+
+class StepModelHMM():
+    """
+    Simulator of the Stepping Model of Latimer et al. Science 2015.
+    """
+    def __init__(self, m=50, r=10, x0=0.2, Rh=50, isi_gamma_shape=None, Rl=None, dt=None):
+        """
+        Simulator of the Stepping Model of Latimer et al. Science 2015.
+        :param m: mean jump time (in # of time-steps). This is the mean parameter of the Negative Binomial distribution
+                  of jump (stepping) time
+        :param r: parameter r ("# of successes") of the Negative Binomial (NB) distribution of jump (stepping) time
+                  (Note that it is more customary to parametrise the NB distribution by its parameter p and r,
+                  instead of m and r, where p is so-called "probability of success" (see Wikipedia). The two
+                  parametrisations are equivalent and one can go back-and-forth via: m = r (1-p)/p and p = r / (m + r).)
+        :param x0: determines the pre-jump firing rate, via  R_pre = x0 * Rh (see below for Rh)
+        :param Rh: firing rate of the "up" state (the same as the post-jump state in most of the project tasks)
+        :param isi_gamma_shape: shape parameter of the Gamma distribution of inter-spike intervals.
+                            see https://en.wikipedia.org/wiki/Gamma_distribution
+        :param Rl: firing rate of the post-jump "down" state (rarely used)
+        :param dt: real time duration of time steps in seconds (only used for converting rates to units of inverse time-step)
+        """
+        self.m = m
+        self.r = r
+        self.x0 = x0
+
+        self.p = r / (m + r)
+
+        self.Rh = Rh
+        if Rl is not None:
+            self.Rl = Rl
+
+        self.isi_gamma_shape = isi_gamma_shape
+        self.dt = dt
+
+
+    @property
+    def params(self):
+        return self.m, self.r, self.x0
+
+    @property
+    def fixed_params(self):
+        return self.Rh, self.Rl
+
+
+    def emit(self, rate):
+        """
+        emit spikes based on rates
+        :param rate: firing rate sequence, r_t, possibly in many trials. Shape: (Ntrials, T)
+        :return: spike train, n_t, as an array of shape (Ntrials, T) containing integer spike counts in different
+                 trials and time bins.
+        """
+        if self.isi_gamma_shape is None:
+            # poisson spike emissions
+            y = npr.poisson(rate * self.dt)
+        else:
+            # sub-poisson/underdispersed spike emissions
+            y = gamma_isi_point_process(rate * self.dt, self.isi_gamma_shape)
+
+        return y
+
+
+    def simulate_2state(self, Ntrials=1, T=100, get_rate=True):
+        """
+        :param Ntrials: (int) number of trials
+        :param T: (int) duration of each trial in number of time-steps.
+        :param get_rate: whether or not to return the rate time-series
+        :return:
+        spikes: shape = (Ntrial, T); spikes[j] gives the spike train, n_t, in trial j, as
+                an array of spike counts in each time-bin (= time step)
+        jumps:  shape = (Ntrials,) ; jumps[j] is the jump time (aka step time), tau, in trial j.
+        rates:  shape = (Ntrial, T); rates[j] is the rate time-series, r_t, in trial j (returned only if get_rate=True)
+        """
+        # set dt (time-step duration in seconds) such that trial duration is always 1 second, regardless of T.
+        dt = 1 / T
+        self.dt = dt
+
+        # in this model, the jump times, tau, follow Geom(p) rather than NB(r,p) so it is not exact
+        transition = np.array([[1-self.p, self.p], [0, 1]])
+
+        spikes, jumps, rates = [], [], []
+        for tr in range(Ntrials):
+            state = 0 # start with initial state = x0
+            rate = np.ones(T)*self.Rh
+            rate[0] = rate[0]*self.x0
+            for t in range(T-1):
+                sample = npr.binomial(1,transition[state][state+1])
+                state+=sample
+                if state==1:
+                    break
+                else:
+                    rate[t+1]*=self.x0
+
+            jumps.append(np.argmax(rate))
+            rates.append(rate)
+            spikes.append(self.emit(rate))
+
+        if get_rate:
+            return np.array(spikes), np.array(jumps), np.array(rates)
+        else:
+            return np.array(spikes), np.array(jumps)
+
+    def simulate_exact(self, Ntrials=1, T=100, get_rate=True):
+        """
+        :param Ntrials: (int) number of trials
+        :param T: (int) duration of each trial in number of time-steps.
+        :param get_rate: whether or not to return the rate time-series
+        :return:
+        spikes: shape = (Ntrial, T); spikes[j] gives the spike train, n_t, in trial j, as
+                an array of spike counts in each time-bin (= time step)
+        jumps:  shape = (Ntrials,) ; jumps[j] is the jump time (aka step time), tau, in trial j.
+        rates:  shape = (Ntrial, T); rates[j] is the rate time-series, r_t, in trial j (returned only if get_rate=True)
+        """
+        # set dt (time-step duration in seconds) such that trial duration is always 1 second, regardless of T.
+        dt = 1 / T
+        self.dt = dt
+
+        # in this model, the states are 0 <= number of successes <= r
+        # in this model, jump occurs after rth success so it is delayed from Week 1 model by r time-steps
+        transition = np.identity(int(self.r)+1)
+        for i in range(int(self.r)):
+            transition[i][i] = 1-self.p
+            transition[i][i+1] = self.p
+
+        spikes, jumps, rates = [], [], []
+        for tr in range(Ntrials):
+            state = 0 # start with initial state = x0
+            rate = np.ones(T)*self.Rh
+            rate[0] = rate[0]*self.x0
+            for t in range(T-1):
+                sample = npr.binomial(1,transition[state][state+1])
+                state+=sample
+                if state==self.r:
+                    break
+                else:
+                    rate[t+1]*=self.x0
+
+            jumps.append(np.argmax(rate))
+            rates.append(rate)
+            spikes.append(self.emit(rate))
+
+        if get_rate:
+            return np.array(spikes), np.array(jumps), np.array(rates)
+        else:
+            return np.array(spikes), np.array(jumps)
+
+    def simulate_exact_2state(self, Ntrials=1, T=100, get_rate=True):
+        """
+        :param Ntrials: (int) number of trials
+        :param T: (int) duration of each trial in number of time-steps.
+        :param get_rate: whether or not to return the rate time-series
+        :return:
+        spikes: shape = (Ntrial, T); spikes[j] gives the spike train, n_t, in trial j, as
+                an array of spike counts in each time-bin (= time step)
+        jumps:  shape = (Ntrials,) ; jumps[j] is the jump time (aka step time), tau, in trial j.
+        rates:  shape = (Ntrial, T); rates[j] is the rate time-series, r_t, in trial j (returned only if get_rate=True)
+        """
+        # set dt (time-step duration in seconds) such that trial duration is always 1 second, regardless of T.
+        dt = 1 / T
+        self.dt = dt
+
+        spikes, jumps, rates = [], [], []
+        for tr in range(Ntrials):
+            state = 0 # start with initial state = x0
+            rate = np.ones(T)*self.Rh
+            rate[0] = rate[0]*self.x0
+            for t in range(T-1):
+                # in this model, p_t = P(rth success occurs after exactly t failures|rth success occurs after > t-1 failures)
+                p_t = nbinom.pmf(t, self.r, self.p)/(1-nbinom.cdf(t, self.r, self.p))
+                transition = np.array([[1-p_t, p_t], [0, 1]])
+                sample = npr.binomial(1,transition[state][state+1])
+                state+=sample
+                if state==1:
+                    break
+                else:
+                    rate[t+1]*=self.x0
+
+            jumps.append(np.argmax(rate))
+            rates.append(rate)
+            spikes.append(self.emit(rate))
+
+        if get_rate:
+            return np.array(spikes), np.array(jumps), np.array(rates)
+        else:
+            return np.array(spikes), np.array(jumps)
 
 class RampModelHMM:
     """
