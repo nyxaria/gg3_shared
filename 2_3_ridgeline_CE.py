@@ -43,7 +43,6 @@ if __name__ == "__main__":
                     # "sigma": s, # for now
                     "K": K
                 })
-                # true_s = (xs * (K - 1)).flatten().astype(int)
                 sum_CE += task_2_3.cross_entropy(ex, states)
             CE_mat[i1] = sum_CE / num_trials
 
@@ -52,8 +51,7 @@ if __name__ == "__main__":
         np.save(save_filename, CE_mat)
         print(f"saved to {save_filename}")
 
-    # smooth and differentiate to look good
-    #
+    # smooth and take the negative differential
     dCE = np.diff(CE_mat, axis=1)
     dCE = scipy.ndimage.gaussian_filter1d(dCE, 2, axis=1)
 
@@ -62,30 +60,26 @@ if __name__ == "__main__":
     dCE /= ymax
 
     df = pd.DataFrame(dCE.T)
-    df.columns = [f"{s:.2f}" for s in betas]  # Set column names based on beta values
+    df.columns = [f"{s:.2f}" for s in betas]
 
     # Create ridgeline plot
     plt.figure(figsize=(10, 8))
 
-    # Use a colormap that progresses with beta values
 
     xrange = list(range(T))
 
 
     fig, axes = joypy.joyplot(df,
                             kind="values",
-                            # figsize=(10, 6),
-                            overlap=5/15,  # Controls vertical overlap between plots
-                            fade=True,  # Fade effect for deeper aesthetics
+                            overlap=5/15,
+                            fade=True,
                             linecolor='black',
                             linewidth=0.5,
-                            colormap=cm.coolwarm,  # Use our custom color progression
+                            colormap=cm.coolwarm,
                             ylim=(0, 1),
                             title='Decrease in Cross-Entropy over time for varying β',
                             x_range=xrange)
-    # axes[-1].set_xticks(xrange)
 
-    # Add labels and title
     plt.xlabel(r"t", fontsize=12)
 
     ax = axes[-1]
@@ -95,6 +89,5 @@ if __name__ == "__main__":
     ax.yaxis.set_ticks([])
 
 
-    # plt.tight_layout()
 
     plt.savefig('./plots/ridgeline_15b.png')

@@ -34,13 +34,10 @@ if __name__ == "__main__":
             'Rh': 20,
         }, test_filtering=True)
 
-        # Create a figure with two subplots (2 rows, 1 column)
 
-        # true_s = (xs * (K - 1)).flatten().astype(int)
         CE_sum += task_2_3.cross_entropy(ex, states)
         fCE_sum += task_2_3.cross_entropy(fex, states)
 
-        # Main plot (top)
         # ax1.matshow(ex.T)
 
         if trial < trials_to_plot:
@@ -56,7 +53,7 @@ if __name__ == "__main__":
 
             ax1.plot(np.arange(T), states, color=color[2], label=f'Trial {trial + 1} (True)', alpha=alpha)
 
-            if trial == 0: # plot stdev
+            if trial == 0:
                 sstd = np.sqrt(np.sum(
                     (np.arange(ex.shape[1]) - np.sum(np.arange(ex.shape[1]) * ex, axis=1, keepdims=True)) ** 2 * ex,
                     axis=1))
@@ -64,11 +61,9 @@ if __name__ == "__main__":
                     (np.arange(fex.shape[1]) - np.sum(np.arange(fex.shape[1]) * fex, axis=1, keepdims=True)) ** 2 * fex,
                     axis=1))
 
-                # print(sstd)
                 smooth_color = red
                 filter_color = blue
 
-                # Plot ±2 standard deviation regions
                 ax1.fill_between(np.arange(T),
                                  expected_s - 2 * sstd,
                                  expected_s + 2 * sstd,
@@ -85,7 +80,6 @@ if __name__ == "__main__":
 
         print('completed', trial)
 
-    # Cross-entropy plot (bottom)
     ax2.plot(np.arange(T), CE_sum / trials, color=red, linewidth=2)
     ax2.plot(np.arange(T), fCE_sum / trials, color=blue, linewidth=2)
 
@@ -93,9 +87,8 @@ if __name__ == "__main__":
     ax2.set_ylabel('Cross-Entropy')
     ax2.set_title('Average Cross-Entropy Over Time (' + str(trials) + ' trials)')
 
-    # Add legend to the top plot (reduce redundancy with a single entry per trial)
     handles, labels = ax1.get_legend_handles_labels()
-    unique_labels = dict(zip(labels, handles))  # Remove duplicates
+    unique_labels = dict(zip(labels, handles))
     ax1.set_title("Markov state (s) over time")
     ax1.set_ylabel("Markov state (proportional to rate)")
     ax1.legend(unique_labels.values(), unique_labels.keys(),

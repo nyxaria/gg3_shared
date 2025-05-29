@@ -41,7 +41,7 @@ if __name__ == "__main__":
                         #"sigma": s,
                         "K": K,
                     })
-                    # true_s = (xs * (K - 1)).flatten().astype(int)
+
                     sum_CE += task_2_3.cross_entropy(ex, states, time_average=True)
                 CE_mat[i1, i2] = sum_CE / num_trials
             print(f'Progress: {i1 + 1}/{num_samples} (beta)')
