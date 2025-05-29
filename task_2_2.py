@@ -1,4 +1,4 @@
-import numpy as np
+    import numpy as np
 import matplotlib.pyplot as plt
 import models_hmm
 import numpy.random as npr
