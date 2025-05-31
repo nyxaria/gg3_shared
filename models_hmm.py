@@ -89,7 +89,7 @@ class StepModelHMM():
 
         return y
 
-
+    # TODO: maybe separate the transition matrix code, if 2.3/further sections need it
     def simulate_2state(self, Ntrials=1, T=100, get_rate=True):
         """
         :param Ntrials: (int) number of trials
@@ -130,7 +130,21 @@ class StepModelHMM():
         else:
             return np.array(spikes), np.array(jumps)
 
-    def simulate_exact(self, Ntrials=1, T=100, get_rate=True):
+    def _calculate_transition_matrix_exact(self, Ntrials=1, T=100):
+        transition = np.identity(int(self.r) + 1)
+        for i in range(int(self.r)):
+            transition[i][i] = 1 - self.p
+            transition[i][i + 1] = self.p
+        return transition
+
+    def _calculate_initial_distribution_exact(self):
+        # always start from the first state
+        pi = np.zeros(int(self.r) + 1)
+        pi[0] = 1
+        return pi
+
+    def simulate_exact(self, Ntrials=1, T=100, get_rate=True, return_state_indices=False):
+
         """
         :param Ntrials: (int) number of trials
         :param T: (int) duration of each trial in number of time-steps.
@@ -147,27 +161,36 @@ class StepModelHMM():
 
         # in this model, the states are 0 <= number of successes <= r
         # in this model, jump occurs after rth success so it is delayed from Week 1 model by r time-steps
-        transition = np.identity(int(self.r)+1)
-        for i in range(int(self.r)):
-            transition[i][i] = 1-self.p
-            transition[i][i+1] = self.p
+        transition = self._calculate_transition_matrix_exact(Ntrials, T)
 
-        spikes, jumps, rates = [], [], []
+        spikes, jumps, rates, states = [], [], [], []
         for tr in range(Ntrials):
-            state = 0 # start with initial state = x0
+            state = np.ones(T) * self.r # states vector for current trial. Assume all are at the max state
+
+            cur_state = 0 # start with initial state = x0
+            state[0] = cur_state
+
             rate = np.ones(T)*self.Rh
             rate[0] = rate[0]*self.x0
+
             for t in range(T-1):
-                sample = npr.binomial(1,transition[state][state+1])
-                state+=sample
-                if state==self.r:
+
+                sample = npr.binomial(1,transition[cur_state][cur_state+1])
+                cur_state+=sample
+                if cur_state==self.r:
                     break
                 else:
                     rate[t+1]*=self.x0
 
+                state[t+1] = cur_state
+
             jumps.append(np.argmax(rate))
             rates.append(rate)
             spikes.append(self.emit(rate))
+            states.append(state)
+
+        if return_state_indices:
+            rates = states
 
         if get_rate:
             return np.array(spikes), np.array(jumps), np.array(rates)
@@ -353,6 +376,7 @@ class RampModelHMM:
     def simulate(self, Ntrials=1, T=100, get_rate=True, return_state_indices=False):
         """
         :param Ntrials: (int) number of trials
+
         :param T: (int) duration of each trial in number of time-steps.
         :param get_rate: whether or not to return the rate time-series
         :return:
