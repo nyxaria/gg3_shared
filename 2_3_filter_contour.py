@@ -18,27 +18,26 @@ plt.rcParams.update({
     'figure.titlesize': 18
 })
 
-np.set_printoptions(legacy='1.25') # don't show np.float; helps with debug
+np.set_printoptions(legacy='1.25')  # don't show np.float; helps with debug
 
 if __name__ == "__main__":
-    num_trials = 100
-    num_samples = 15 # on the grid
+    num_trials = 30
+    num_samples = 10  # on the grid
     K = 50
-    smooth_save_filename = "./results/step_f_sCE_x0r15.npy"
-    filter_save_filename = "./results/step_f_fCE_x0r15.npy"
+    smooth_save_filename = "./results/ramp_f_sCE_x0s8.npy"
+    filter_save_filename = "./results/ramp_f_fCE_x0s8.npy"
 
-    recompute = True
+    recompute = False
 
     T = 100
-    rs = np.rint(np.linspace(0, 20, num_samples+1))[1:]
-    # betas = np.linspace(0, 4, num_samples)
-    # sigmas = np.linspace(0, 4, num_samples)
+    rs = np.rint(np.linspace(0, 20, num_samples + 1))[1:]
+    betas = np.linspace(0, 4, num_samples)
+    sigmas = np.linspace(0, 2, num_samples)
     x0s = np.linspace(0, 1, num_samples)
-    # Rhs = np.linspace(100, 2000, num_samples)
+    Rhs = np.linspace(100, 2000, num_samples)
 
     ivar1 = x0s
-    ivar2 = rs
-
+    ivar2 = sigmas
 
     if os.path.exists(smooth_save_filename) and os.path.exists(filter_save_filename) and not recompute:
         print("loading " + smooth_save_filename + ', ' + filter_save_filename)
@@ -55,22 +54,22 @@ if __name__ == "__main__":
                 sum_CE = 0
                 sum_fCE = 0
                 for _ in range(num_trials):
-                    ex, fex, _, _, states = task_2_3.step_HMM_inference({
+                    ex, fex, _, _, states = task_2_3.ramp_HMM_inference({
                         "x0": iv1,
-                        "r": iv2,
+                        "sigma": iv2,
                         # "beta": b,
                         # "sigma": s,
                         "K": K,
                     }, test_filtering=True)
                     # true_s = (xs * (K - 1)).flatten().astype(int)
-                    bex = task_2_3.compress_states(ex)
-                    bstates = (states == iv2).astype(int)  # TODO if r, set == r
+                    # bex = task_2_3.compress_states(ex)
+                    # bstates = (states == iv2).astype(int)  # TODO if r, set == r
 
-                    fbex = task_2_3.compress_states(fex)
-                    fbstates = (states == iv2).astype(int)  # TODO if r, set == r
+                    # fbex = task_2_3.compress_states(fex)
+                    # fbstates = (states == iv2).astype(int)  # TODO if r, set == r
 
-                    sum_CE += task_2_3.cross_entropy(bex, bstates, time_average=True)
-                    sum_fCE += task_2_3.cross_entropy(fbex, fbstates, time_average=True)
+                    sum_CE += task_2_3.cross_entropy(ex, states, time_average=True)
+                    sum_fCE += task_2_3.cross_entropy(fex, states, time_average=True)
 
                 CE_mat[i1, i2] = sum_CE / num_trials
                 fCE_mat[i1, i2] = sum_fCE / num_trials
@@ -83,12 +82,11 @@ if __name__ == "__main__":
 
     # matshow
 
-
     # tricontour
 
     CE_diff = fCE_mat - CE_mat
 
-    ivar1_grid, ivar2_grid = np.meshgrid(ivar1, ivar2, indexing='ij') #betas, sigmas, indexing='ij')
+    ivar1_grid, ivar2_grid = np.meshgrid(ivar1, ivar2, indexing='ij')  # betas, sigmas, indexing='ij')
     ivar1_flat = ivar1_grid.flatten()
     ivar2_flat = ivar2_grid.flatten()
     CE_diff_flat = CE_diff.flatten()
@@ -100,6 +98,6 @@ if __name__ == "__main__":
     contour = plt.tricontourf(ivar1_flat, ivar2_flat, CE_diff_flat, levels=20, cmap='viridis')
     plt.colorbar(contour, label='Difference in Cross-Entropy')
     plt.xlabel('x0')
-    plt.ylabel('r')
-    plt.title(r'$Step: CE_{smoothed} - CE_{filtered}$ for varying $x_0, r$')
+    plt.ylabel('sigma')
+    plt.title(r'Ramp: $CE_{smoothed} - CE_{filtered}$ for varying $x_0, sigma$')
     plt.show()
