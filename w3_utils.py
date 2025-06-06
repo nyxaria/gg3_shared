@@ -54,6 +54,63 @@ def ramp_LLH(data, params):
     return probs_grid
 
 
+def step_LLH(data, params):
+    # construct data
+    defaults = {
+        'K': 50,
+        'Rh': 50,
+        'x0': 0.2,
+        'm': 50,
+        'r': 10,
+        'T': 100,
+    }
+
+    if type(params) == dict:
+        params = np.array(params, dtype=object)
+
+    def step_LLH_single(data, _params):
+
+        _params = {**defaults, **_params}
+
+        m = _params['m']
+        if not _params['r'].is_integer():
+            print('rounding down floating point r:', params['r'])
+
+        r = int(_params['r'])
+        x0 = _params['x0']
+        Rh = _params['Rh']
+        T = _params['T']
+
+        K = 50
+
+
+        step = StepModelHMM(m=m, r=r, x0=x0, Rh=Rh)
+
+        Tmat = step._calculate_transition_matrix_exact(T=T)
+        pi = step._calculate_initial_distribution_exact()
+
+        # compensate by changing pi
+        pi = pi.T @ np.linalg.matrix_power(Tmat, r)
+        pi = pi.T
+
+        state_rates = np.ones(int(r) + 1) * (x0 * Rh) / T
+        state_rates[-1] = Rh / T
+
+        LLH = inference.poisson_logpdf(data, state_rates)
+        LLH = np.sum(LLH, axis=0)
+
+        norm = inference.hmm_normalizer(pi, Tmat, LLH)
+        return norm
+
+    probs_grid = np.empty_like(params, dtype=float)
+    for idx, p in np.ndenumerate(params):
+        probs_grid[idx] = step_LLH_single(data, p)
+
+    # vllh = np.vectorize(lambda params: step_LLH_single(data, params))
+    # probs_grid = vllh(params)
+
+    return probs_grid
+
 def make_params_grid(specs):
     """
     Create a grid of all possible parameter combinations, where each cell is a tuple of parameters.
@@ -94,6 +151,11 @@ def make_params_grid(specs):
         param_grid[indices] = current_params
 
     return np.squeeze(param_grid)
+
+
+def get_param_values(params_grid, param_name):
+    # get some named param from params grid, for testing
+    return np.vectorize(lambda x: x[param_name])(params_grid)
 
 
 def uniform_posterior(params_grid, log=True):
@@ -139,7 +201,7 @@ def expectation(probs_grid, params_grid, log=True):
     param_values = np.zeros(params_grid.shape, dtype=dtype)
 
     for param in param_names:
-        param_values[param] = np.vectorize(lambda x: x[param])(params_grid)
+        param_values[param] = get_param_values(params_grid, param)
 
     expectations = {param: np.sum(param_values[param] * probs_grid) for param in param_names}
 
@@ -151,7 +213,30 @@ if __name__ == "__main__":
     T = 100
     Rh = 50
 
-    specs = OD([('beta', [0, 1, 10]),
+    specs = OD([('m', [25, 75, 30]),
+                ('r', [1, 6, 6]),
+                ('T', T),
+                ('Rh', Rh)])
+
+    params_grid = make_params_grid(specs)
+
+    true_m = 1
+    true_r = 20
+
+    data, _, _ = StepModelHMM(m=true_m, r=true_r, Rh=Rh).simulate_exact(Ntrials=100, T=T, delay_compensation=True)
+
+    LLH_probs_grid = step_LLH(data, params_grid)
+    prior_probs_grid = uniform_posterior(params_grid)
+
+    npost = norm_posterior(LLH_probs_grid, prior_probs_grid)
+    plt.matshow(np.exp(npost))
+    plt.show()
+
+
+
+    print(expectation(npost))
+
+    '''specs = OD([('beta', [0, 1, 10]),
                 ('sigma', [0, 0.5, 10]),
                 ('T', T),
                 ('Rh', Rh)])
@@ -167,6 +252,4 @@ if __name__ == "__main__":
     prior_probs_grid = uniform_posterior(params_grid)
 
     npost = norm_posterior(LLH_probs_grid, prior_probs_grid)
-    print(expectation(npost, params_grid))
-
-    print('bz')
+    print(expectation(npost, params_grid))'''

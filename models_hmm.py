@@ -143,7 +143,7 @@ class StepModelHMM():
         pi[0] = 1
         return pi
 
-    def simulate_exact(self, Ntrials=1, T=100, get_rate=True, return_state_indices=False):
+    def simulate_exact(self, Ntrials=1, T=100, get_rate=True, return_state_indices=False, delay_compensation=False):
 
         """
         :param Ntrials: (int) number of trials
@@ -165,15 +165,20 @@ class StepModelHMM():
 
         spikes, jumps, rates, states = [], [], [], []
         for tr in range(Ntrials):
-            state = np.ones(T) * self.r # states vector for current trial. Assume all are at the max state
 
-            cur_state = 0 # start with initial state = x0
+
+
+            sim_steps = T+self.r-1 if delay_compensation else T-1
+
+            state = np.ones(sim_steps+1) * self.r # states vector for current trial. Assume all are at the max state
+            rate = np.ones(sim_steps+1)*self.Rh
+
+            rate[0] = rate[0]*self.x0
+            cur_state = 0  # start with initial state = x0
             state[0] = cur_state
 
-            rate = np.ones(T)*self.Rh
-            rate[0] = rate[0]*self.x0
 
-            for t in range(T-1):
+            for t in range(sim_steps):
 
                 sample = npr.binomial(1,transition[cur_state][cur_state+1])
                 cur_state+=sample
@@ -183,6 +188,10 @@ class StepModelHMM():
                     rate[t+1]*=self.x0
 
                 state[t+1] = cur_state
+
+            if delay_compensation:
+                rate = rate[self.r:]
+                state = state[self.r:]
 
             jumps.append(np.argmax(rate))
             rates.append(rate)
