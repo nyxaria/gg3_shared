@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from collections import OrderedDict as OD
 import scipy.special
 import os
+import pickle
 
 import w3_utils
 from models_hmm import RampModelHMM
@@ -33,10 +34,17 @@ def task_3_1_1_visualize_posterior_2d(true_params, n_trials, param_specs, params
     beta_vals = param_specs['beta']
     sigma_vals = param_specs['sigma']
 
+    delta_beta = beta_vals[1] - beta_vals[0]
+    delta_sigma = sigma_vals[1] - sigma_vals[0]
+    extent = [
+        beta_vals[0] - delta_beta / 2, beta_vals[-1] + delta_beta / 2,
+        sigma_vals[0] - delta_sigma / 2, sigma_vals[-1] + delta_sigma / 2
+    ]
+
     plt.figure(figsize=(8, 6))
 
     plt.imshow(np.exp(norm_post_grid).T, origin='lower', aspect='auto',
-               extent=[beta_vals[0], beta_vals[-1], sigma_vals[0], sigma_vals[-1]],
+               extent=extent,
                cmap='viridis')
     plt.colorbar(label='Posterior Probability')
     plt.scatter(true_params['beta'], true_params['sigma'], color='red', marker='x', s=100, label='True Parameters')
@@ -51,6 +59,81 @@ def task_3_1_1_visualize_posterior_2d(true_params, n_trials, param_specs, params
     filepath = os.path.join(save_dir, filename)
     plt.savefig(filepath, dpi=300, bbox_inches='tight')
     
+    plt.show()
+
+def task_3_1_1_visualize_map_error(true_param_specs, inference_param_specs, n_trials, K=50, T=100, Rh=50):
+    """
+    For a grid of true parameters, simulates data, finds the MAP estimate,
+    and visualizes the error between the true parameters and the MAP estimate.
+    Caches results to avoid re-computation.
+    """
+    true_params_grid = w3_utils.make_params_grid(true_param_specs)
+    inference_params_grid = w3_utils.make_params_grid(inference_param_specs)
+    
+    error_grid = np.zeros(true_params_grid.shape)
+    
+    M_inference = len(inference_param_specs['beta'])
+    cache_dir = f"plots/MAP_{M_inference}_{K}_{n_trials}_{T}_{Rh}"
+    os.makedirs(cache_dir, exist_ok=True)
+    
+    # iterate over true params grid
+    it = np.nditer(true_params_grid, flags=['multi_index', 'refs_ok'])
+    for i, true_params_dict_obj in enumerate(it):
+        true_params = true_params_dict_obj.item()
+        print(f"Processing parameter set {i} of {true_params_grid.size}")
+        
+        param_str = "-".join([f"{k}_{v:.2f}" for k, v in sorted(true_params.items()) if k in ['beta', 'sigma', 'x0']])
+        cache_filename = os.path.join(cache_dir, f"{param_str}.pickle")
+        
+        # here we check if the cache file exists and if it does, we load from it
+        if os.path.exists(cache_filename):
+            # load from cache
+            with open(cache_filename, 'rb') as f:
+                error = pickle.load(f)
+            print(f"Loaded from cache: {cache_filename}")
+        else:
+            model = RampModelHMM(beta=true_params['beta'], sigma=true_params['sigma'], x0=true_params['x0'], K=K, Rh=Rh)
+            data, _, _ = model.simulate(Ntrials=n_trials, T=T)
+            
+            # calculate posterior
+            llh_grid = w3_utils.ramp_LLH(data, inference_params_grid)
+            prior_grid = w3_utils.uniform_posterior(inference_params_grid, log=True)
+            norm_post_grid = w3_utils.norm_posterior(llh_grid, prior_grid, log=True)
+            
+            # find MAP estimate
+            map_indices = np.unravel_index(np.argmax(norm_post_grid), norm_post_grid.shape)
+            map_params = inference_params_grid[map_indices]
+            
+            # calculate error
+            error = np.sqrt((true_params['beta'] - map_params['beta'])**2 + 
+                            (true_params['sigma'] - map_params['sigma'])**2)
+            
+            # Save to cache
+            with open(cache_filename, 'wb') as f:
+                pickle.dump(error, f)
+            print(f"Saved to cache: {cache_filename}")
+        
+        error_grid[it.multi_index] = error
+
+    true_beta_vals = true_param_specs['beta']
+    true_sigma_vals = true_param_specs['sigma']
+
+    delta_beta = true_beta_vals[1] - true_beta_vals[0]
+    delta_sigma = true_sigma_vals[1] - true_sigma_vals[0]
+    extent = [
+        true_beta_vals[0] - delta_beta / 2, true_beta_vals[-1] + delta_beta / 2,
+        true_sigma_vals[0] - delta_sigma / 2, true_sigma_vals[-1] + delta_sigma / 2
+    ]
+    
+    plt.figure(figsize=(8, 6))
+    im = plt.imshow(error_grid.T, origin='lower', aspect='auto', extent=extent, cmap='magma')
+    plt.colorbar(im, label='MAP Estimation Error (Euclidean Distance)')
+    plt.xlabel(r'True Beta ($\beta$)')
+    plt.ylabel(r'True Sigma ($\sigma$)')
+    plt.title(f'MAP Estimation Error (N_trials={n_trials})')
+    
+    filename = f"plots/task_3_1_1_map_error_N{n_trials}.png"
+    plt.savefig(filename)
     plt.show()
 
 def task_3_1_2_analyze_estimation_2d(true_params, n_trials_list, params_grid, K=50, T=100, Rh=50):
@@ -127,9 +210,27 @@ def task_3_1_3_visualize_posterior_marginal(true_params, n_trials, param_specs, 
     sigma_vals = param_specs['sigma']
     x0_vals = param_specs['x0']
 
+    # Correct extent for imshow to center pixels on grid points
+    delta_beta = beta_vals[1] - beta_vals[0]
+    delta_sigma = sigma_vals[1] - sigma_vals[0]
+    delta_x0 = x0_vals[1] - x0_vals[0]
+
+    extent_beta_sigma = [
+        beta_vals[0] - delta_beta / 2, beta_vals[-1] + delta_beta / 2,
+        sigma_vals[0] - delta_sigma / 2, sigma_vals[-1] + delta_sigma / 2
+    ]
+    extent_beta_x0 = [
+        beta_vals[0] - delta_beta / 2, beta_vals[-1] + delta_beta / 2,
+        x0_vals[0] - delta_x0 / 2, x0_vals[-1] + delta_x0 / 2
+    ]
+    extent_sigma_x0 = [
+        sigma_vals[0] - delta_sigma / 2, sigma_vals[-1] + delta_sigma / 2,
+        x0_vals[0] - delta_x0 / 2, x0_vals[-1] + delta_x0 / 2
+    ]
+
     # beta vs sigma
     im0 = axs[0].imshow(np.exp(marginal_beta_sigma).T, origin='lower', aspect='auto',
-                        extent=[beta_vals[0], beta_vals[-1], sigma_vals[0], sigma_vals[-1]], cmap='viridis')
+                        extent=extent_beta_sigma, cmap='viridis')
     axs[0].scatter(true_params['beta'], true_params['sigma'], c='r', marker='x')
     axs[0].set_xlabel(r'Beta ($\beta$)')
     axs[0].set_ylabel(r'Sigma ($\sigma$)')
@@ -138,7 +239,7 @@ def task_3_1_3_visualize_posterior_marginal(true_params, n_trials, param_specs, 
 
     # beta vs x0
     im1 = axs[1].imshow(np.exp(marginal_beta_x0).T, origin='lower', aspect='auto',
-                        extent=[beta_vals[0], beta_vals[-1], x0_vals[0], x0_vals[-1]], cmap='viridis')
+                        extent=extent_beta_x0, cmap='viridis')
     axs[1].scatter(true_params['beta'], true_params['x0'], c='r', marker='x')
     axs[1].set_xlabel(r'Beta ($\beta$)')
     axs[1].set_ylabel('x0')
@@ -147,7 +248,7 @@ def task_3_1_3_visualize_posterior_marginal(true_params, n_trials, param_specs, 
 
     # sigma vs x0
     im2 = axs[2].imshow(np.exp(marginal_sigma_x0).T, origin='lower', aspect='auto',
-                        extent=[sigma_vals[0], sigma_vals[-1], x0_vals[0], x0_vals[-1]], cmap='viridis')
+                        extent=extent_sigma_x0, cmap='viridis')
     axs[2].scatter(true_params['sigma'], true_params['x0'], c='r', marker='x')
     axs[2].set_xlabel(r'Sigma ($\sigma$)')
     axs[2].set_ylabel('x0')
@@ -244,10 +345,44 @@ if __name__ == "__main__":
 
     # todo loop over n_trials and different true_params to get the results above
     # 3.1.1
-    task_3_1_1_visualize_posterior_2d(true_params, n_trials=100,
-                                      param_specs=param_specs,
-                                      params_grid=params_grid,
-                                      K=K, T=T_MS, Rh=RH)
+    # task_3_1_1_visualize_posterior_2d(true_params, n_trials=100,
+    #                                   param_specs=param_specs,
+    #                                   params_grid=params_grid,
+    #                                   K=K, T=T_MS, Rh=RH)
+    
+
+    # --- Task 3.1.1: MAP Estimation Error ---
+    # This can be slow, so using a coarser grid for true parameters.
+    print("\n--- Task 3.1.1: MAP Estimation Error ---")
+    M_TRUE_GRID = 10 
+    M_INFERENCE_GRID = 30
+    
+    true_param_specs_error = OD([
+        ('beta', np.linspace(0, 4, M_TRUE_GRID)),
+        ('sigma', np.linspace(0.04, 4, M_TRUE_GRID)),
+        ('x0', 0.2), 
+        ('K', K),
+        ('T', T_MS),
+        ('Rh', RH)
+    ])
+
+    inference_param_specs_error = OD([
+        ('beta', np.linspace(0, 4, M_INFERENCE_GRID)),
+        ('sigma', np.linspace(0.04, 4, M_INFERENCE_GRID)),
+        ('x0', 0.2), 
+        ('K', K),
+        ('T', T_MS),
+        ('Rh', RH)
+    ])
+    
+    task_3_1_1_visualize_map_error(
+        true_param_specs=true_param_specs_error,
+        inference_param_specs=inference_param_specs_error,
+        n_trials=100,
+        K=K,
+        T=T_MS,
+        Rh=RH
+    )
     # exit()
     # 3.1.2
     n_trials_list_312 = [1, 5, 10, 20, 50, 100, 200, 400]
@@ -278,3 +413,9 @@ if __name__ == "__main__":
     task_3_1_3_analyze_estimation_3d(true_params, n_trials_list=[50, 100, 200],
                                      params_grid=params_grid_313,
                                      K=K, T=T_MS, Rh=RH)
+
+
+    # --- Task 3.1.2: Estimation Error vs. N_trials ---
+    print("\n--- Task 3.1.2: Estimation Error vs. N_trials ---")
+    task_3_1_1_visualize_posterior_2d(true_params=true_params, n_trials=100, param_specs=param_specs, params_grid=params_grid, K=K, T=T_MS, Rh=RH)
+    task_3_1_1_visualize_posterior_2d(true_params=true_params, n_trials=400, param_specs=param_specs, params_grid=params_grid, K=K, T=T_MS, Rh=RH)
