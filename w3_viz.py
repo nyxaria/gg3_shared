@@ -223,18 +223,26 @@ if __name__ == "__main__":
     K = 25
     T_MS = 100
     RH = 50
-    M_GRID = 15
-    X0 = 0.2
+
+    N_MAP_TRIALS = 400
+
+    M_2D_GRID = 31
+    M_TRUE_GRID = 11
+    M_INFERENCE_GRID = 31
 
 
-    
-    param_specs = OD([
-        ('beta', np.linspace(0, 4, M_GRID)),
-        ('sigma', np.exp(np.linspace(np.log(0.04), np.log(4), M_GRID))),
-        ('x0', X0),
-        ('K', K),
-        ('T', T_MS),
-        ('Rh', RH)
+    ramp_param_2d = OD([
+        ('beta', np.linspace(0, 4, M_2D_GRID)),
+        ('sigma', np.linspace(0.04, 4, M_2D_GRID)),
+        ('x0', 0.2),
+        ('K', K), ('T', T_MS), ('Rh', RH)
+    ])
+
+    step_param_2d = OD([
+        ('m', np.linspace(0, T_MS*3/4, M_2D_GRID)),
+        ('r', np.linspace(1, 6, 6).astype(int)),
+        ('x0', 0.2),
+        ('K', K), ('T', T_MS), ('Rh', RH)
     ])
 
 
