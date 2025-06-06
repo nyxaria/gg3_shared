@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from collections import OrderedDict as OD
 
 
-np.set_printoptions(legacy='1.25') # don't show np.float; helps with debug
+np.set_printoptions(legacy='1.21') # don't show np.float; helps with debug
 
 def ramp_LLH(data, params):
     # construct data
@@ -330,8 +330,6 @@ def posterior_std_dev(probs_grid, params_grid, posterior_means, log=True):
     - std_devs: dict, posterior standard deviation for each parameter.
     """
     if log:
-        # Convert log probabilities to linear scale, ensuring sum is 1
-        # Subtract max for numerical stability before exp
         max_log_prob = np.max(probs_grid)
         probs_grid_linear = np.exp(probs_grid - max_log_prob)
         probs_grid_linear = probs_grid_linear / np.sum(probs_grid_linear)
@@ -345,8 +343,7 @@ def posterior_std_dev(probs_grid, params_grid, posterior_means, log=True):
     for param in param_names:
         if param not in posterior_means: # Skip if param not in posterior_means (e.g. T, Rh, K)
             if param in params_grid.flat[0] and isinstance(params_grid.flat[0][param], (int, float)):
-                 # Only try to calculate std dev for numeric params that were inferred
-                 pass # This case should ideally not be hit if posterior_means is comprehensive
+                 pass
             else:
                 continue
 
@@ -355,7 +352,7 @@ def posterior_std_dev(probs_grid, params_grid, posterior_means, log=True):
         try:
             # Vectorized extraction of param**2
             squared_values = np.array([d[param]**2 for d in params_grid.flat]).reshape(params_grid.shape)
-        except TypeError: # Happens if param is not numeric (e.g. 'filter')
+        except TypeError:
             continue
 
 
