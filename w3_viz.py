@@ -34,6 +34,7 @@ def task_3_1_1_visualize_posterior_2d(true_params, n_trials, param_specs, params
     sigma_vals = param_specs['sigma']
 
     plt.figure(figsize=(8, 6))
+
     plt.imshow(np.exp(norm_post_grid).T, origin='lower', aspect='auto',
                extent=[beta_vals[0], beta_vals[-1], sigma_vals[0], sigma_vals[-1]],
                cmap='viridis')
@@ -227,7 +228,7 @@ if __name__ == "__main__":
     
     param_specs = OD([
         ('beta', np.linspace(0, 4, M_GRID)), 
-        ('sigma', np.exp(np.linspace(np.log(0.04), np.log(4), M_GRID))),
+        ('sigma', np.linspace(0.04, 4, M_GRID)),
         ('x0', true_params['x0']),
         ('K', K),
         ('T', T_MS),
@@ -261,7 +262,7 @@ if __name__ == "__main__":
 
     param_specs_313 = OD([
         ('beta', np.linspace(0, 4, M_GRID)),
-        ('sigma', np.exp(np.linspace(np.log(0.04), np.log(4), M_GRID))),
+        ('sigma', np.linspace(0.04, 4, M_GRID)),
         ('x0', np.linspace(0, 0.5, M_GRID)),
         ('K', K),
         ('T', T_MS),
