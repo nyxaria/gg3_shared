@@ -243,18 +243,18 @@ if __name__ == "__main__":
 
     # todo loop over n_trials and different true_params to get the results above
     # 3.1.1
-    task_3_1_1_visualize_posterior_2d(true_params, n_trials=100, 
+    task_3_1_1_visualize_posterior_2d(true_params, n_trials=100,
                                       param_specs=param_specs,
                                       params_grid=params_grid,
                                       K=K, T=T_MS, Rh=RH)
     # exit()
     # 3.1.2
-    n_trials_list_312 = [10, 50, 100, 200, 400]
+    n_trials_list_312 = [1, 5, 10, 20, 50, 100, 200, 400]
     task_3_1_2_analyze_estimation_2d(true_params, n_trials_list_312,
                                      params_grid=params_grid,
                                      K=K, T=T_MS, Rh=RH)
 
-    
+    # exit()
     # 3.1.3
     true_params = {'beta': 1.0, 'sigma': 0.2, 'x0': 0.1}
     M_GRID = 10 # reduce for speed

@@ -49,12 +49,15 @@ def ramp_LLH(data, params):
         # Calculate log likelihood of observing spike counts given each state's rate
         # Returns matrix of log likelihoods for each timepoint and state
         LLH = inference.poisson_logpdf(data, state_rates)
-        # Sum log likelihoods across all timepoints
-        LLH = np.sum(LLH, axis=0)
+        # summing here is wrong
+        # LLH = np.sum(LLH, axis=0)
 
         # Calculate normalizing constant (log probability of the data)
         # using HMM forward algorithm
-        norm = inference.hmm_normalizer(pi, Tmat, LLH)
+        norm = 0
+        for trial_llh in LLH:
+            norm += inference.hmm_normalizer(pi, Tmat, trial_llh)
+
         return norm
 
     vllh = np.vectorize(lambda params: ramp_LLH_single(data, params))
@@ -106,9 +109,12 @@ def step_LLH(data, params):
         state_rates[-1] = Rh / T
 
         LLH = inference.poisson_logpdf(data, state_rates)
-        LLH = np.sum(LLH, axis=0)
+        # LLH = np.sum(LLH, axis=0)
 
-        norm = inference.hmm_normalizer(pi, Tmat, LLH)
+        norm = 0
+        for trial_llh in LLH:
+            norm += inference.hmm_normalizer(pi, Tmat, trial_llh)
+
         return norm
 
     probs_grid = np.empty_like(params, dtype=float)
@@ -278,7 +284,7 @@ if __name__ == "__main__":
     T = 100
     Rh = 50
 
-    specs = OD([('m', [25, 75, 30]),
+    '''specs = OD([('m', [25, 75, 30]),
                 ('r', [1, 6, 6]),
                 ('T', T),
                 ('Rh', Rh)])
@@ -299,16 +305,16 @@ if __name__ == "__main__":
 
 
 
-    print(expectation(npost))
+    print(expectation(npost))'''
 
-    '''specs = OD([('beta', [0, 1, 10]),
+    specs = OD([('beta', [0, 1, 10]),
                 ('sigma', [0, 0.5, 10]),
                 ('T', T),
                 ('Rh', Rh)])
 
     params_grid = make_params_grid(specs)
 
-    true_beta = 1.3
+    true_beta = 0.69
     true_sigma = 0.2
 
     data, _, _ = RampModelHMM(beta=true_beta, sigma=true_sigma, Rh=Rh).simulate(Ntrials=100, T=T)
@@ -317,4 +323,4 @@ if __name__ == "__main__":
     prior_probs_grid = uniform_posterior(params_grid)
 
     npost = norm_posterior(LLH_probs_grid, prior_probs_grid)
-    print(expectation(npost, params_grid))'''
+    print(expectation(npost, params_grid))
