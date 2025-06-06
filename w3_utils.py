@@ -36,15 +36,24 @@ def ramp_LLH(data, params):
         Rh = _params['Rh']
 
         ramp = RampModelHMM(beta, sigma, x0, K, Rh)
-
+        # Calculate transition probability matrix between states
         Tmat = ramp._calculate_transition_matrix(T)
+        
+        # Calculate initial state distribution
         pi = ramp._calculate_initial_distribution(T)
 
+        # Create array of firing rates for each state
+        # Maps states (0 to 1) to rates (0 to Rh/T spikes per time bin)
         state_rates = np.linspace(0, 1, K) * (Rh / T)
 
+        # Calculate log likelihood of observing spike counts given each state's rate
+        # Returns matrix of log likelihoods for each timepoint and state
         LLH = inference.poisson_logpdf(data, state_rates)
+        # Sum log likelihoods across all timepoints
         LLH = np.sum(LLH, axis=0)
 
+        # Calculate normalizing constant (log probability of the data)
+        # using HMM forward algorithm
         norm = inference.hmm_normalizer(pi, Tmat, LLH)
         return norm
 
@@ -206,6 +215,62 @@ def expectation(probs_grid, params_grid, log=True):
     expectations = {param: np.sum(param_values[param] * probs_grid) for param in param_names}
 
     return expectations
+
+
+def posterior_std_dev(probs_grid, params_grid, posterior_means, log=True):
+    """
+    Calculate the posterior standard deviation for each parameter.
+
+    Parameters:
+    - probs_grid: numpy array, posterior probabilities (can be log probabilities).
+    - params_grid: numpy array, grid of parameter dictionaries.
+    - posterior_means: dict, pre-calculated posterior means for each parameter.
+    - log: boolean, if True, probs_grid is in log scale.
+
+    Returns:
+    - std_devs: dict, posterior standard deviation for each parameter.
+    """
+    if log:
+        # Convert log probabilities to linear scale, ensuring sum is 1
+        # Subtract max for numerical stability before exp
+        max_log_prob = np.max(probs_grid)
+        probs_grid_linear = np.exp(probs_grid - max_log_prob)
+        probs_grid_linear = probs_grid_linear / np.sum(probs_grid_linear)
+    else:
+        probs_grid_linear = probs_grid / np.sum(probs_grid)
+
+
+    param_names = list(params_grid.flat[0].keys())
+    std_devs = {}
+
+    for param in param_names:
+        if param not in posterior_means: # Skip if param not in posterior_means (e.g. T, Rh, K)
+            if param in params_grid.flat[0] and isinstance(params_grid.flat[0][param], (int, float)):
+                 # Only try to calculate std dev for numeric params that were inferred
+                 pass # This case should ideally not be hit if posterior_means is comprehensive
+            else:
+                continue
+
+
+        # E[X^2]
+        try:
+            # Vectorized extraction of param**2
+            squared_values = np.array([d[param]**2 for d in params_grid.flat]).reshape(params_grid.shape)
+        except TypeError: # Happens if param is not numeric (e.g. 'filter')
+            continue
+
+
+        expected_sq_value = np.sum(squared_values * probs_grid_linear)
+        
+        # Variance = E[X^2] - (E[X])^2
+        variance = expected_sq_value - (posterior_means[param]**2)
+        
+        if variance < 0:
+            variance = 0.0
+            
+        std_devs[param] = np.sqrt(variance)
+        
+    return std_devs
 
 
 if __name__ == "__main__":
