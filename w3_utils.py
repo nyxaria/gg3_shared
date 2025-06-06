@@ -220,25 +220,16 @@ def gaussian_posterior(params_grid, mu, cov, log=True):
                   that sum to 1 (or log probabilities that sum to 1 when exponentiated)
     """
     shape = params_grid.shape
-    param_names = list(params_grid.flat[0].keys())
+    sorted_mu_keys = sorted(mu.keys())
+    param_names = sorted(list(params_grid.flat[0].keys()))
 
-
-
-    # Extract parameter values into vectors
-    param_values = np.zeros((len(param_names), np.prod(shape)))
     varied_params = []
     for i, param in enumerate(param_names):
-        vals = get_param_values(params_grid, param).flatten()
-        if not np.unique(vals).size == 1: # this param is not varied
-            varied_params += param_values
-            varied_param_values[i] = vals
-        else:
-            constant_param_values[i] = vals
-
-        param_values[i] =vals
+        if param in mu:
+            varied_params.append(get_param_values(params_grid, param))
 
     # Convert mu dict to vector in same order as param_names
-    mu_vec = np.array([mu[param] for param in varied_params])
+    mu_vec = np.array([mu[param] for param in sorted_mu_keys])
 
     # Prepare covariance matrix if provided as dict
     # also, i realised that this wouldve been cleaner if cov matrix only was allowed
@@ -247,8 +238,8 @@ def gaussian_posterior(params_grid, mu, cov, log=True):
 
     if isinstance(cov, dict):
         cov_matrix = np.zeros((len(varied_params), len(varied_params)))
-        for i, pi in enumerate(varied_params):
-            for j, pj in enumerate(varied_params):
+        for i, pi in enumerate(sorted_mu_keys):
+            for j, pj in enumerate(sorted_mu_keys):
                 key = (pi, pj) if (pi, pj) in cov else (pj, pi)
                 if key not in cov:
                     if pi == pj:
@@ -257,23 +248,44 @@ def gaussian_posterior(params_grid, mu, cov, log=True):
                         cov[key] = 0 # assume uncorrelated
 
                 cov_matrix[i, j] = cov[key]
+
     else:
         cov_matrix = cov
 
     # Calculate Gaussian probability density
-    diff = param_values.T - mu_vec
-    probs_grid = -0.5 * diff @ np.linalg.inv(cov_matrix) @ diff.T
-    probs_grid = probs_grid.reshape(shape)
+    varied_params = np.array(varied_params)
+    reshaped_params = np.moveaxis(varied_params, 0, -1).reshape(-1, len(mu_vec))
 
-    # Convert to probabilities and normalize
-    probs_grid = np.exp(probs_grid)
-    probs_grid = probs_grid / np.sum(probs_grid)
+    diff = reshaped_params - mu_vec
+
+    # exp_term =  -0.5 * np.einsum('ij, jk, ik->i', diff, np.linalg.inv(cov_matrix), diff)
+    exp_term = -0.5 * np.sum((diff @ np.linalg.inv(cov_matrix)) * diff, axis=1)
+
+    exp_term = exp_term.reshape(shape)
+
+    probs_grid = np.exp(exp_term)
+    probs_grid /= np.sum(probs_grid)
 
     if log:
         probs_grid = np.log(probs_grid)
 
     return probs_grid
 
+
+def sample_from_grid(probs_grid, params_grid=None, log=True):
+    if log:
+        probs_grid = np.exp(probs_grid)
+
+    flat = probs_grid.flatten()
+    flat_idx = np.random.choice(len(flat), p=flat) # sample with probs grid as our dist
+
+    idx = np.unravel_index(flat_idx, probs_grid.shape)
+
+    if params_grid is not None:
+        return params_grid[idx]
+
+    else:
+        return idx
 
 def bayes_factor(llh_grid, prior_grid, log=True):
     if log:
