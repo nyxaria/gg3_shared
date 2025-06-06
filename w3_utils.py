@@ -56,12 +56,22 @@ def ramp_LLH(data, params):
         # using HMM forward algorithm
         norm = 0
         for trial_llh in LLH:
-            norm += inference.hmm_normalizer(pi, Tmat, trial_llh)
+            trial_norm = inference.hmm_normalizer(pi, Tmat, trial_llh)
+            norm += trial_norm
+
+            # plt.matshow(np.exp(trial_llh))
+            # plt.show()
 
         return norm
 
-    vllh = np.vectorize(lambda params: ramp_LLH_single(data, params))
-    probs_grid = vllh(params)
+    probs_grid = np.empty_like(params, dtype=float)
+    for idx, p in np.ndenumerate(params):
+        probs_grid[idx] = ramp_LLH_single(data, p)
+
+    # vllh = np.vectorize(lambda params: step_LLH_single(data, params))
+    # probs_grid = vllh(params)
+
+
 
     return probs_grid
 
@@ -194,6 +204,77 @@ def uniform_posterior(params_grid, log=True):
 
     return probs_grid
 
+
+def gaussian_posterior(params_grid, mu, cov, log=True):
+    """
+    Generate a gaussian posterior probability grid with the same shape as params_grid.
+
+    Parameters:
+    - params_grid: numpy array of any shape containing parameter dictionaries
+    - mu: dict with mean values for each parameter
+    - cov: 2D array or dict of parameter variances/covariances
+    - log: boolean, if True returns log probabilities, otherwise regular probabilities
+
+    Returns:
+    - probs_grid: numpy array with same shape as params_grid containing probabilities
+                  that sum to 1 (or log probabilities that sum to 1 when exponentiated)
+    """
+    shape = params_grid.shape
+    param_names = list(params_grid.flat[0].keys())
+
+
+
+    # Extract parameter values into vectors
+    param_values = np.zeros((len(param_names), np.prod(shape)))
+    varied_params = []
+    for i, param in enumerate(param_names):
+        vals = get_param_values(params_grid, param).flatten()
+        if not np.unique(vals).size == 1: # this param is not varied
+            varied_params += param_values
+            varied_param_values[i] = vals
+        else:
+            constant_param_values[i] = vals
+
+        param_values[i] =vals
+
+    # Convert mu dict to vector in same order as param_names
+    mu_vec = np.array([mu[param] for param in varied_params])
+
+    # Prepare covariance matrix if provided as dict
+    # also, i realised that this wouldve been cleaner if cov matrix only was allowed
+    # but since the param grid dict is not ordered we have no way of knowing
+    # how the order of the cov matrix corresponds, and I don't want to refactor for now
+
+    if isinstance(cov, dict):
+        cov_matrix = np.zeros((len(varied_params), len(varied_params)))
+        for i, pi in enumerate(varied_params):
+            for j, pj in enumerate(varied_params):
+                key = (pi, pj) if (pi, pj) in cov else (pj, pi)
+                if key not in cov:
+                    if pi == pj:
+                        raise ValueError(f"Covariance matrix is missing key {key}")
+                    else:
+                        cov[key] = 0 # assume uncorrelated
+
+                cov_matrix[i, j] = cov[key]
+    else:
+        cov_matrix = cov
+
+    # Calculate Gaussian probability density
+    diff = param_values.T - mu_vec
+    probs_grid = -0.5 * diff @ np.linalg.inv(cov_matrix) @ diff.T
+    probs_grid = probs_grid.reshape(shape)
+
+    # Convert to probabilities and normalize
+    probs_grid = np.exp(probs_grid)
+    probs_grid = probs_grid / np.sum(probs_grid)
+
+    if log:
+        probs_grid = np.log(probs_grid)
+
+    return probs_grid
+
+
 def bayes_factor(llh_grid, prior_grid, log=True):
     if log:
         return scipy.special.logsumexp(llh_grid + prior_grid)
@@ -282,7 +363,7 @@ def posterior_std_dev(probs_grid, params_grid, posterior_means, log=True):
 if __name__ == "__main__":
 
     T = 100
-    Rh = 50
+    # Rh = 500
 
     '''specs = OD([('m', [25, 75, 30]),
                 ('r', [1, 6, 6]),
@@ -307,20 +388,40 @@ if __name__ == "__main__":
 
     print(expectation(npost))'''
 
-    specs = OD([('beta', [0, 1, 10]),
+    '''specs = OD([('beta', [0, 1, 10]),
                 ('sigma', [0, 0.5, 10]),
                 ('T', T),
-                ('Rh', Rh)])
+                ('Rh', Rh)])'''
+
+    K = 25
+    T_MS = 100
+    RH = 500
+    M_GRID = 7
+
+    true_params = {'beta': 1.0, 'sigma': 0.2, 'x0': 0.2}
+
+    specs = OD([
+        ('beta', np.linspace(0, 4, M_GRID)),
+        ('sigma', np.exp(np.linspace(np.log(0.04), np.log(4), M_GRID))),
+        ('x0', true_params['x0']),
+        ('K', K),
+        ('T', T_MS),
+        ('Rh', RH)
+    ])
 
     params_grid = make_params_grid(specs)
 
-    true_beta = 0.69
-    true_sigma = 0.2
 
-    data, _, _ = RampModelHMM(beta=true_beta, sigma=true_sigma, Rh=Rh).simulate(Ntrials=100, T=T)
+
+    data, _, _ = RampModelHMM(beta=true_params['beta'], sigma=true_params['sigma'], Rh=RH).simulate(Ntrials=71, T=T_MS)
 
     LLH_probs_grid = ramp_LLH(data, params_grid)
     prior_probs_grid = uniform_posterior(params_grid)
 
     npost = norm_posterior(LLH_probs_grid, prior_probs_grid)
+
+    plt.matshow(np.exp(npost))
+
+    plt.show()
+
     print(expectation(npost, params_grid))

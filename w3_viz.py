@@ -33,6 +33,8 @@ def task_3_1_1_visualize_posterior_2d(true_params, n_trials, param_specs, params
     beta_vals = param_specs['beta']
     sigma_vals = param_specs['sigma']
 
+    print(w3_utils.expectation(norm_post_grid, params_grid))
+
     plt.figure(figsize=(8, 6))
     plt.imshow(np.exp(norm_post_grid).T, origin='lower', aspect='auto',
                extent=[beta_vals[0], beta_vals[-1], sigma_vals[0], sigma_vals[-1]],
@@ -221,20 +223,29 @@ if __name__ == "__main__":
     K = 25
     T_MS = 100
     RH = 50
-    M_GRID = 15 
+    M_GRID = 15
+    X0 = 0.2
 
-    true_params = {'beta': 1.0, 'sigma': 0.2, 'x0': 0.2}
+
     
     param_specs = OD([
-        ('beta', np.linspace(0, 4, M_GRID)), 
+        ('beta', np.linspace(0, 4, M_GRID)),
         ('sigma', np.exp(np.linspace(np.log(0.04), np.log(4), M_GRID))),
-        ('x0', true_params['x0']),
+        ('x0', X0),
         ('K', K),
         ('T', T_MS),
         ('Rh', RH)
     ])
+
+
     params_grid = w3_utils.make_params_grid(param_specs)
-    
+
+
+    true_params = params_grid[5, 6] # arbitrary
+
+    print('true params', true_params)
+
+
     """
     Repeat for different true parameter values (within the ranges of the prior distribution) and for different number of trials (over a range from 1 to 400). 
     Document your observations of systematic dependence of the posterior on the number of trials. Similarly, note any systematic changes in behaviour
@@ -243,18 +254,18 @@ if __name__ == "__main__":
 
     # todo loop over n_trials and different true_params to get the results above
     # 3.1.1
-    task_3_1_1_visualize_posterior_2d(true_params, n_trials=100,
+    '''task_3_1_1_visualize_posterior_2d(true_params, n_trials=100,
                                       param_specs=param_specs,
                                       params_grid=params_grid,
                                       K=K, T=T_MS, Rh=RH)
-    # exit()
+    exit()'''
     # 3.1.2
     n_trials_list_312 = [1, 5, 10, 20, 50, 100, 200, 400]
     task_3_1_2_analyze_estimation_2d(true_params, n_trials_list_312,
                                      params_grid=params_grid,
                                      K=K, T=T_MS, Rh=RH)
 
-    # exit()
+    exit()
     # 3.1.3
     true_params = {'beta': 1.0, 'sigma': 0.2, 'x0': 0.1}
     M_GRID = 10 # reduce for speed
