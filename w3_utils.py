@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from collections import OrderedDict as OD
 
 
-np.set_printoptions(legacy='1.25') # don't show np.float; helps with debug
+np.set_printoptions(legacy='1.21') # don't show np.float; helps with debug
 
 def ramp_LLH(data, params):
     # construct data
