@@ -441,6 +441,8 @@ if __name__ == "__main__":
     # 3.1.1
     
     ramp_params_grid_2d = w3_utils.make_params_grid(ramp_param_2d)
+    task_3_1_1_visualize_posterior_2d('ramp', ramp_true_params, n_trials=10, param_specs=ramp_param_2d, params_grid=ramp_params_grid_2d, K=K, T=T_MS, Rh=RH, show=args.show)
+    task_3_1_1_visualize_posterior_2d('ramp', ramp_true_params, n_trials=50, param_specs=ramp_param_2d, params_grid=ramp_params_grid_2d, K=K, T=T_MS, Rh=RH, show=args.show)
     task_3_1_1_visualize_posterior_2d('ramp', ramp_true_params, n_trials=100, param_specs=ramp_param_2d, params_grid=ramp_params_grid_2d, K=K, T=T_MS, Rh=RH, show=args.show)
     task_3_1_1_visualize_posterior_2d('ramp', ramp_true_params, n_trials=400, param_specs=ramp_param_2d, params_grid=ramp_params_grid_2d, K=K, T=T_MS, Rh=RH, show=args.show)
 
@@ -493,6 +495,8 @@ if __name__ == "__main__":
     # 3.1.1
     
     step_params_grid_2d = w3_utils.make_params_grid(step_param_2d)
+    task_3_1_1_visualize_posterior_2d('step', step_true_params, n_trials=10, param_specs=step_param_2d, params_grid=step_params_grid_2d, K=K, T=T_MS, Rh=RH, show=args.show)
+    task_3_1_1_visualize_posterior_2d('step', step_true_params, n_trials=50, param_specs=step_param_2d, params_grid=step_params_grid_2d, K=K, T=T_MS, Rh=RH, show=args.show)
     task_3_1_1_visualize_posterior_2d('step', step_true_params, n_trials=100, param_specs=step_param_2d, params_grid=step_params_grid_2d, K=K, T=T_MS, Rh=RH, show=args.show)
     task_3_1_1_visualize_posterior_2d('step', step_true_params, n_trials=400, param_specs=step_param_2d, params_grid=step_params_grid_2d, K=K, T=T_MS, Rh=RH, show=args.show)
 
