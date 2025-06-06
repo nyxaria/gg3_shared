@@ -16,14 +16,16 @@ if __name__ == "__main__":
     M_GRID = 15
     X0 = 0.2
 
-    param_specs = OD([
-        ('beta', np.linspace(0, 7, M_GRID)),
+    ramp_param_specs = OD([
+        ('beta', np.linspace(0, 4, M_GRID)),
         ('sigma', np.exp(np.linspace(np.log(0.04), np.log(4), M_GRID))),
         ('x0', X0),
         ('K', K),
         ('T', T_MS),
         ('Rh', RH)
     ])
+
+    step_param_specs = OD([])
 
     params_grid = w3_utils.make_params_grid(param_specs)
 
