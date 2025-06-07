@@ -4,11 +4,56 @@ from collections import OrderedDict as OD
 import scipy.special
 import pandas as pd
 import os
+import multiprocessing
 from models_hmm import RampModelHMM, StepModelHMM
 from scipy.interpolate import griddata
 import seaborn as sns
 import w3_utils
 from models_hmm import RampModelHMM
+from tqdm import tqdm
+
+
+def _model_selection_worker(args):
+    """Helper function for parallel execution in model_selection."""
+    (ramp_params_grid, step_params_grid, gen_ramp, gen_step, ramp_post, step_post,
+     N_TRIALS, ramp_gamma_shape, step_gamma_shape, N_TRIALS_STEP) = args
+
+    ramp_params = w3_utils.sample_from_grid(gen_ramp, ramp_params_grid)
+    ramp_data, _, _ = RampModelHMM(beta=ramp_params['beta'],
+                                   sigma=ramp_params['sigma'],
+                                   Rh=ramp_params['Rh'],
+                                   isi_gamma_shape=ramp_gamma_shape
+                                   ).simulate(Ntrials=N_TRIALS, T=ramp_params['T'])
+
+    ramp_LLH_ramp = w3_utils.ramp_LLH(ramp_data, ramp_params_grid)
+    step_LLH_ramp = w3_utils.step_LLH(ramp_data, step_params_grid)
+
+    ramp_bf_ramp = w3_utils.bayes_factor(ramp_LLH_ramp, ramp_post)
+    step_bf_ramp = w3_utils.bayes_factor(step_LLH_ramp, step_post)
+
+    step_params = w3_utils.sample_from_grid(gen_step, step_params_grid)
+    step_data, _, _ = StepModelHMM(m=step_params['m'],
+                                   r=step_params['r'],
+                                   Rh=step_params['Rh'],
+                                   isi_gamma_shape=step_gamma_shape
+                                   ).simulate_exact(Ntrials=N_TRIALS_STEP, T=step_params['T'])
+
+    ramp_LLH_step = w3_utils.ramp_LLH(step_data, ramp_params_grid)
+    step_LLH_step = w3_utils.step_LLH(step_data, step_params_grid)
+
+    ramp_bf_step = w3_utils.bayes_factor(ramp_LLH_step, ramp_post)
+    step_bf_step = w3_utils.bayes_factor(step_LLH_step, step_post)
+
+    return {
+        'beta': ramp_params['beta'],
+        'sigma': ramp_params['sigma'],
+        'ramp_data_ramp_bf': ramp_bf_ramp,
+        'ramp_data_step_bf': step_bf_ramp,
+        'm': step_params['m'],
+        'r': step_params['r'],
+        'step_data_ramp_bf': ramp_bf_step,
+        'step_data_step_bf': step_bf_step
+    }
 
 
 def model_selection(ramp_params_grid, step_params_grid, gen_ramp, gen_step, ramp_post, step_post,
@@ -49,45 +94,17 @@ def model_selection(ramp_params_grid, step_params_grid, gen_ramp, gen_step, ramp
         'step_data_ramp_bf': [], 'step_data_step_bf': []
     }
 
-    for id in range(N_DATASETS):
-        ramp_params = w3_utils.sample_from_grid(gen_ramp, ramp_params_grid)
-        ramp_data, _, _ = RampModelHMM(beta=ramp_params['beta'],
-                                      sigma=ramp_params['sigma'],
-                                      Rh=ramp_params['Rh'],
-                                      isi_gamma_shape=ramp_gamma_shape
-                                      ).simulate(Ntrials=N_TRIALS, T=ramp_params['T'])
+    N_TRIALS_STEP = 50
 
-        # Calculate model evidence for ramp data
-        ramp_LLH_ramp = w3_utils.ramp_LLH(ramp_data, ramp_params_grid)
-        step_LLH_ramp = w3_utils.step_LLH(ramp_data, step_params_grid)
-        
-        ramp_bf_ramp = w3_utils.bayes_factor(ramp_LLH_ramp, ramp_post)
-        step_bf_ramp = w3_utils.bayes_factor(step_LLH_ramp, step_post)
+    worker_args = [(ramp_params_grid, step_params_grid, gen_ramp, gen_step, ramp_post, step_post,
+                    N_TRIALS, ramp_gamma_shape, step_gamma_shape, N_TRIALS_STEP) for _ in range(N_DATASETS)]
 
-        step_params = w3_utils.sample_from_grid(gen_step, step_params_grid)
-        step_data, _, _ = StepModelHMM(m=step_params['m'],
-                                      r=step_params['r'],
-                                      Rh=step_params['Rh'],
-                                      isi_gamma_shape=step_gamma_shape
-                                      ).simulate_exact(Ntrials=50, T=step_params['T'])
-
-        ramp_LLH_step = w3_utils.ramp_LLH(step_data, ramp_params_grid)
-        step_LLH_step = w3_utils.step_LLH(step_data, step_params_grid)
-
-        ramp_bf_step = w3_utils.bayes_factor(ramp_LLH_step, ramp_post)
-        step_bf_step = w3_utils.bayes_factor(step_LLH_step, step_post)
-
-        results['beta'].append(ramp_params['beta'])
-        results['sigma'].append(ramp_params['sigma'])
-        results['ramp_data_ramp_bf'].append(ramp_bf_ramp)
-        results['ramp_data_step_bf'].append(step_bf_ramp)
-        results['m'].append(step_params['m'])
-        results['r'].append(step_params['r'])
-        results['step_data_ramp_bf'].append(ramp_bf_step)
-        results['step_data_step_bf'].append(step_bf_step)
-
-        if id % 10 == 0:
-            print('completed', id, 'of', N_DATASETS)
+    with multiprocessing.Pool() as pool:
+        pool_results = list(tqdm(pool.imap_unordered(_model_selection_worker, worker_args), total=N_DATASETS))
+    
+    for res in pool_results:
+        for key in results:
+            results[key].append(res[key])
 
     if save_to:
         results_df = pd.DataFrame(results)
@@ -322,6 +339,30 @@ def plot_heatmaps(ramp_params_grid, step_params_grid, gen_ramp, gen_step, ramp_p
     plt.show()
 
 
+def _test_worker(args):
+    (uniform_ramp_posterior, ramp_params_grid, uniform_step_posterior, 
+     step_params_grid, RH, N_TRIALS, T_MS) = args
+
+    dataset_params = w3_utils.sample_from_grid(uniform_ramp_posterior, ramp_params_grid)
+    data_ramp, _, _ = RampModelHMM(beta=dataset_params['beta'],
+                            sigma=dataset_params['sigma'], Rh=RH).simulate(Ntrials=N_TRIALS,
+                                                                        T=T_MS)
+
+    dataset_params = w3_utils.sample_from_grid(uniform_step_posterior, step_params_grid)
+
+    data_step, _, _ = StepModelHMM(m=dataset_params['m'],
+                              r=dataset_params['r'], Rh=RH).simulate_exact(Ntrials=N_TRIALS,
+                                                                             T=T_MS)
+
+    ramp_LLH_pgrid = w3_utils.ramp_LLH(data_ramp, ramp_params_grid)
+    ramp_bayes = w3_utils.bayes_factor(ramp_LLH_pgrid, uniform_ramp_posterior)
+
+    step_LLH_pgrid = w3_utils.step_LLH(data_step, step_params_grid)
+    step_bayes = w3_utils.bayes_factor(step_LLH_pgrid, uniform_step_posterior)
+
+    return ramp_bayes, step_bayes, dataset_params['m'], dataset_params['r']
+
+
 if __name__ == "__main__":
     K = 25
     T_MS = 100
@@ -362,37 +403,18 @@ if __name__ == "__main__":
     step_bayes_factors = []
 
 
-    for id in range(N_DATASETS):
-        # generate ramp data
-        dataset_params = w3_utils.sample_from_grid(uniform_ramp_posterior, ramp_params_grid)
+    worker_args = [(uniform_ramp_posterior, ramp_params_grid, uniform_step_posterior,
+                    step_params_grid, RH, N_TRIALS, T_MS) for _ in range(N_DATASETS)]
 
-        data, _, _ = RampModelHMM(beta=dataset_params['beta'],
-                                sigma=dataset_params['sigma'], Rh=RH).simulate(Ntrials=N_TRIALS,
-                                                                            T=T_MS)
-        # generate step data
-        dataset_params = w3_utils.sample_from_grid(uniform_step_posterior, step_params_grid)
+    with multiprocessing.Pool() as pool:
+        results = list(tqdm(pool.imap_unordered(_test_worker, worker_args), total=N_DATASETS))
 
-        data, _, _ = StepModelHMM(m=dataset_params['m'],
-                                  r=dataset_params['r'], Rh=RH).simulate_exact(Ntrials=N_TRIALS,
-                                                                                 T=T_MS)
+    for ramp_bayes, step_bayes, m_val, r_val in results:
+        ramp_bayes_factors.append(ramp_bayes)
+        step_bayes_factors.append(step_bayes)
+        iv1.append(m_val)
+        iv2.append(r_val)
 
-        ramp_LLH_pgrid = w3_utils.ramp_LLH(data, ramp_params_grid)
-        ramp_bayes = w3_utils.bayes_factor(ramp_LLH_pgrid, uniform_ramp_posterior)
-
-        step_LLH_pgrid = w3_utils.step_LLH(data, step_params_grid)
-        step_bayes = w3_utils.bayes_factor(step_LLH_pgrid, uniform_step_posterior)
-
-        print('dataset', id, 'with params', dataset_params, ':')
-        print( 'ramp bayes factor', ramp_bayes, 'step bayes factor', step_bayes)
-
-        ramp_bayes_factors += [ramp_bayes]
-        step_bayes_factors += [step_bayes]
-
-        iv1 += [dataset_params['m']]
-        iv2 += [dataset_params['r']]
-
-    # betas = [params['beta'] for params in dataset_params]
-    # sigmas = [params['sigma'] for params in dataset_params]
 
     diff_bayes = np.array(step_bayes_factors) - np.array(ramp_bayes_factors)
 
