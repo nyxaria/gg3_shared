@@ -16,20 +16,20 @@ from tqdm import tqdm
 def _model_selection_worker(args):
     """Helper function for parallel execution in model_selection."""
     (ramp_params_grid, step_params_grid, gen_ramp, gen_step, ramp_post, step_post,
-     N_TRIALS, ramp_gamma_shape, step_gamma_shape, N_TRIALS_STEP) = args
+     N_TRIALS_RAMP, ramp_gamma_shape, step_gamma_shape, N_TRIALS_STEP) = args
 
     ramp_params = w3_utils.sample_from_grid(gen_ramp, ramp_params_grid)
     ramp_data, _, _ = RampModelHMM(beta=ramp_params['beta'],
                                    sigma=ramp_params['sigma'],
                                    Rh=ramp_params['Rh'],
                                    isi_gamma_shape=ramp_gamma_shape
-                                   ).simulate(Ntrials=N_TRIALS, T=ramp_params['T'])
+                                   ).simulate(Ntrials=N_TRIALS_RAMP, T=ramp_params['T'])
 
     ramp_LLH_ramp = w3_utils.ramp_LLH(ramp_data, ramp_params_grid)
     step_LLH_ramp = w3_utils.step_LLH(ramp_data, step_params_grid)
 
-    ramp_bf_ramp = w3_utils.bayes_factor(ramp_LLH_ramp, ramp_post)
-    step_bf_ramp = w3_utils.bayes_factor(step_LLH_ramp, step_post)
+    ramp_bf_ramp = w3_utils.marginal_likelihood(ramp_LLH_ramp, ramp_post)
+    step_bf_ramp = w3_utils.marginal_likelihood(step_LLH_ramp, step_post)
 
     step_params = w3_utils.sample_from_grid(gen_step, step_params_grid)
     step_data, _, _ = StepModelHMM(m=step_params['m'],
@@ -41,8 +41,8 @@ def _model_selection_worker(args):
     ramp_LLH_step = w3_utils.ramp_LLH(step_data, ramp_params_grid)
     step_LLH_step = w3_utils.step_LLH(step_data, step_params_grid)
 
-    ramp_bf_step = w3_utils.bayes_factor(ramp_LLH_step, ramp_post)
-    step_bf_step = w3_utils.bayes_factor(step_LLH_step, step_post)
+    ramp_bf_step = w3_utils.marginal_likelihood(ramp_LLH_step, ramp_post)
+    step_bf_step = w3_utils.marginal_likelihood(step_LLH_step, step_post)
 
     return {
         'beta': ramp_params['beta'],
@@ -97,7 +97,7 @@ def model_selection(ramp_params_grid, step_params_grid, gen_ramp, gen_step, ramp
     N_TRIALS_STEP = 50
 
     worker_args = [(ramp_params_grid, step_params_grid, gen_ramp, gen_step, ramp_post, step_post,
-                    N_TRIALS, ramp_gamma_shape, step_gamma_shape, N_TRIALS_STEP) for _ in range(N_DATASETS)]
+                    N_TRIALS, ramp_gamma_shape, step_gamma_shape, N_TRIALS) for _ in range(N_DATASETS)]
 
     with multiprocessing.Pool() as pool:
         pool_results = list(tqdm(pool.imap_unordered(_model_selection_worker, worker_args), total=N_DATASETS))
@@ -257,8 +257,8 @@ def plot_heatmaps(ramp_params_grid, step_params_grid, gen_ramp, gen_step, ramp_p
         ramp_LLH_ramp = w3_utils.ramp_LLH(ramp_data, ramp_params_grid)
         step_LLH_ramp = w3_utils.step_LLH(ramp_data, step_params_grid)
 
-        ramp_bf_ramp = w3_utils.bayes_factor(ramp_LLH_ramp, ramp_post)
-        step_bf_ramp = w3_utils.bayes_factor(step_LLH_ramp, step_post)
+        ramp_bf_ramp = w3_utils.marginal_likelihood(ramp_LLH_ramp, ramp_post)
+        step_bf_ramp = w3_utils.marginal_likelihood(step_LLH_ramp, step_post)
 
         ramp_data_ramp_bf.append(ramp_bf_ramp)
         ramp_data_step_bf.append(step_bf_ramp)
@@ -276,8 +276,8 @@ def plot_heatmaps(ramp_params_grid, step_params_grid, gen_ramp, gen_step, ramp_p
         ramp_LLH_step = w3_utils.ramp_LLH(step_data, ramp_params_grid)
         step_LLH_step = w3_utils.step_LLH(step_data, step_params_grid)
 
-        ramp_bf_step = w3_utils.bayes_factor(ramp_LLH_step, ramp_post)
-        step_bf_step = w3_utils.bayes_factor(step_LLH_step, step_post)
+        ramp_bf_step = w3_utils.marginal_likelihood(ramp_LLH_step, ramp_post)
+        step_bf_step = w3_utils.marginal_likelihood(step_LLH_step, step_post)
 
         step_data_ramp_bf.append(ramp_bf_step)
         step_data_step_bf.append(step_bf_step)
@@ -355,10 +355,10 @@ def _test_worker(args):
                                                                              T=T_MS)
 
     ramp_LLH_pgrid = w3_utils.ramp_LLH(data_ramp, ramp_params_grid)
-    ramp_bayes = w3_utils.bayes_factor(ramp_LLH_pgrid, uniform_ramp_posterior)
+    ramp_bayes = w3_utils.marginal_likelihood(ramp_LLH_pgrid, uniform_ramp_posterior)
 
     step_LLH_pgrid = w3_utils.step_LLH(data_step, step_params_grid)
-    step_bayes = w3_utils.bayes_factor(step_LLH_pgrid, uniform_step_posterior)
+    step_bayes = w3_utils.marginal_likelihood(step_LLH_pgrid, uniform_step_posterior)
 
     return ramp_bayes, step_bayes, dataset_params['m'], dataset_params['r']
 
@@ -392,8 +392,8 @@ if __name__ == "__main__":
     ramp_params_grid = w3_utils.make_params_grid(ramp_param_specs)
     step_params_grid = w3_utils.make_params_grid(step_param_specs)
 
-    uniform_ramp_posterior = w3_utils.uniform_posterior(ramp_params_grid)
-    uniform_step_posterior = w3_utils.uniform_posterior(step_params_grid)
+    uniform_ramp_posterior = w3_utils.uniform_prior(ramp_params_grid)
+    uniform_step_posterior = w3_utils.uniform_prior(step_params_grid)
 
 
 

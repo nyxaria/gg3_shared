@@ -52,15 +52,33 @@ if __name__ == "__main__":
     ramp_params_grid = w3_utils.make_params_grid(ramp_param_specs)
     step_params_grid = w3_utils.make_params_grid(step_param_specs)
 
-    uniform_ramp_posterior = w3_utils.uniform_posterior(ramp_params_grid)
-    uniform_step_posterior = w3_utils.uniform_posterior(step_params_grid)
+    uniform_ramp_posterior = w3_utils.uniform_prior(ramp_params_grid)
+    uniform_step_posterior = w3_utils.uniform_prior(step_params_grid)
 
 
 
-    N_DATASETS = 20
-    N_TRIALS = 5
+    N_DATASETS = 72
+    N_TRIALS = 50
 
     # 4_11
+
+    # BASELINE
+
+    fn = "./results/UU_D" + str(N_DATASETS) + "_shape1_T" + str(N_TRIALS) + ".csv"
+
+    w3_2.model_selection(
+        ramp_params_grid, step_params_grid,
+        uniform_ramp_posterior, uniform_step_posterior,  # generating
+        uniform_ramp_posterior, uniform_step_posterior,  # inference
+        N_DATASETS=N_DATASETS, N_TRIALS=N_TRIALS,
+        ramp_gamma_shape=1, step_gamma_shape=1,
+        # format: generating: G/U; inference: G/U; n. datasets, n. trials
+        # if G, append std_fraction on front
+        save_to=os.path.join(os.getcwd(), fn)
+    )
+
+    w3_2.plot_heatmap(fn, 'Uniform prior, shape=1, ' + str(N_TRIALS) + ' trials/dataset')
+    w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=1, ' + str(N_TRIALS) + ' trials/dataset')
 
     # TEST 1
 
@@ -77,8 +95,8 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, 'Uniform prior, shape=3, 5 trials/dataset')
-    w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=3, 5 trials/dataset')
+    w3_2.plot_heatmap(fn, 'Uniform prior, shape=3, ' + str(N_TRIALS) + ' trials/dataset')
+    w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=3, ' + str(N_TRIALS) + ' trials/dataset')
 
     # TEST 2
 
@@ -95,5 +113,5 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, 'Uniform prior, shape=5, 5 trials/dataset')
-    w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=5, 5 trials/dataset')
+    w3_2.plot_heatmap(fn, 'Uniform prior, shape=5, ' + str(N_TRIALS) + ' trials/dataset')
+    w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=5, ' + str(N_TRIALS) + ' trials/dataset')

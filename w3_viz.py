@@ -54,7 +54,7 @@ def task_3_1_1_visualize_posterior_2d(model_type, true_params, n_trials, param_s
             data, _, _ = model.simulate_exact(Ntrials=n_trials, T=T, delay_compensation=True)
 
         llh_grid = llh_func(data, params_grid)
-        prior_grid = w3_utils.uniform_posterior(params_grid, log=True)
+        prior_grid = w3_utils.uniform_prior(params_grid, log=True)
         norm_post_grid = w3_utils.norm_posterior(llh_grid, prior_grid, log=True)
         with open(cache_filename, 'wb') as f:
             pickle.dump(norm_post_grid, f)
@@ -118,7 +118,7 @@ def _calculate_map_error_single(args):
         data, _, _ = model.simulate_exact(Ntrials=n_trials, T=T, delay_compensation=True)
         llh_grid = w3_utils.step_LLH(data, inference_params_grid)
 
-    prior_grid = w3_utils.uniform_posterior(inference_params_grid, log=True)
+    prior_grid = w3_utils.uniform_prior(inference_params_grid, log=True)
     norm_post_grid = w3_utils.norm_posterior(llh_grid, prior_grid, log=True)
 
     # MAP error
@@ -238,7 +238,7 @@ def task_3_1_2_analyze_estimation_2d(model_type, true_params, n_trials_list, par
                 data, _, _ = model.simulate_exact(Ntrials=n_trials, T=T, delay_compensation=True)
             
             llh_grid = llh_func(data, params_grid)
-            prior_grid = w3_utils.uniform_posterior(params_grid)
+            prior_grid = w3_utils.uniform_prior(params_grid)
             norm_post_grid = w3_utils.norm_posterior(llh_grid, prior_grid)
             
             posterior_means = w3_utils.expectation(norm_post_grid, params_grid)
@@ -301,7 +301,7 @@ def task_3_1_3_visualize_posterior_marginal(model_type, true_params, n_trials, p
             data, _, _ = model.simulate_exact(Ntrials=n_trials, T=T, delay_compensation=True)
 
         llh_grid = llh_func(data, params_grid)
-        prior_grid = w3_utils.uniform_posterior(params_grid)
+        prior_grid = w3_utils.uniform_prior(params_grid)
         norm_post_grid = w3_utils.norm_posterior(llh_grid, prior_grid)
         with open(cache_filename, 'wb') as f:
             pickle.dump(norm_post_grid, f)
@@ -369,7 +369,7 @@ def task_3_1_3_analyze_estimation_3d(model_type, true_params, n_trials_list, par
                 data, _, _ = model.simulate_exact(Ntrials=n_trials, T=T, delay_compensation=True)
             
             llh_grid = llh_func(data, params_grid)
-            prior_grid = w3_utils.uniform_posterior(params_grid)
+            prior_grid = w3_utils.uniform_prior(params_grid)
             norm_post_grid = w3_utils.norm_posterior(llh_grid, prior_grid)
             
             posterior_means = w3_utils.expectation(norm_post_grid, params_grid)

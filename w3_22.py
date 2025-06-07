@@ -51,13 +51,13 @@ if __name__ == "__main__":
     ramp_params_grid = w3_utils.make_params_grid(ramp_param_specs)
     step_params_grid = w3_utils.make_params_grid(step_param_specs)
 
-    uniform_ramp_posterior = w3_utils.uniform_posterior(ramp_params_grid)
-    uniform_step_posterior = w3_utils.uniform_posterior(step_params_grid)
+    uniform_ramp_posterior = w3_utils.uniform_prior(ramp_params_grid)
+    uniform_step_posterior = w3_utils.uniform_prior(step_params_grid)
 
 
 
-    N_DATASETS = 20
-    N_TRIALS = 5
+    N_DATASETS = 96
+    N_TRIALS = 3
 
 
     # TEST 1
@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     STD_FRACTION = 0.5
 
-    gauss_ramp_posterior = w3_utils.gaussian_posterior(
+    gauss_ramp_posterior = w3_utils.gaussian_prior(
         ramp_params_grid,
         mu={
             "beta": mean(*BETA_RANGE),
@@ -92,7 +92,7 @@ if __name__ == "__main__":
             ("sigma", "sigma"): var(*SIGMA_RANGE, STD_FRACTION)
         })
 
-    gauss_step_posterior = w3_utils.gaussian_posterior(
+    gauss_step_posterior = w3_utils.gaussian_prior(
         step_params_grid,
         mu={
             "m": mean(*M_RANGE),
@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
     STD_FRACTION = 0.25
 
-    gauss_ramp_posterior = w3_utils.gaussian_posterior(
+    gauss_ramp_posterior = w3_utils.gaussian_prior(
         ramp_params_grid,
         mu={
             "beta": mean(*BETA_RANGE),
@@ -135,7 +135,7 @@ if __name__ == "__main__":
             ("sigma", "sigma"): var(*SIGMA_RANGE, STD_FRACTION)
         })
 
-    gauss_step_posterior = w3_utils.gaussian_posterior(
+    gauss_step_posterior = w3_utils.gaussian_prior(
         step_params_grid,
         mu={
             "m": mean(*M_RANGE),

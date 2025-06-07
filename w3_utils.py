@@ -183,7 +183,7 @@ def get_param_values(params_grid, param_name):
     return np.vectorize(lambda x: x[param_name])(params_grid)
 
 
-def uniform_posterior(params_grid, log=True):
+def uniform_prior(params_grid, log=True):
     """
     Generate a uniform posterior probability grid with the same shape as params_grid.
 
@@ -205,7 +205,7 @@ def uniform_posterior(params_grid, log=True):
     return probs_grid
 
 
-def gaussian_posterior(params_grid, mu, cov, log=True):
+def gaussian_prior(params_grid, mu, cov, log=True):
     """
     Generate a gaussian posterior probability grid with the same shape as params_grid.
 
@@ -287,7 +287,7 @@ def sample_from_grid(probs_grid, params_grid=None, log=True):
     else:
         return idx
 
-def bayes_factor(llh_grid, prior_grid, log=True):
+def marginal_likelihood(llh_grid, prior_grid, log=True):
     if log:
         return scipy.special.logsumexp(llh_grid + prior_grid)
 
@@ -297,7 +297,7 @@ def unnorm_posterior(llh_grid, prior_grid, log=True):
 
 def norm_posterior(llh_grid, prior_grid, log=True):
     if log:
-        return llh_grid + prior_grid - bayes_factor(llh_grid, prior_grid, log=log)
+        return llh_grid + prior_grid - marginal_likelihood(llh_grid, prior_grid, log=log)
 
 def expectation(probs_grid, params_grid, log=True):
     if log:
@@ -425,7 +425,7 @@ if __name__ == "__main__":
     data, _, _ = RampModelHMM(beta=true_params['beta'], sigma=true_params['sigma'], Rh=RH).simulate(Ntrials=71, T=T_MS)
 
     LLH_probs_grid = ramp_LLH(data, params_grid)
-    prior_probs_grid = uniform_posterior(params_grid)
+    prior_probs_grid = uniform_prior(params_grid)
 
     npost = norm_posterior(LLH_probs_grid, prior_probs_grid)
 
