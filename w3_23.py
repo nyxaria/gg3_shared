@@ -179,15 +179,16 @@ mean = lambda a, b: (b+a)/2
 if __name__ == "__main__":
     K = 25
     T_MS = 100
-    RH = 50
+
     M_GRID = 15
-    X0 = 0.2
-    # N_DATASETS = 50
-    # N_TRIALS = 5
+
+    RH = 20
+    X0 = 0.5
+    N_TRIALS= 10 # new standard
+    N_DATASETS = 24 # TODO make this big
 
     # STD_FRACTION = 0.25
 
-    # TODO changeme
     BETA_RANGE = (0, 4)
     SIGMA_RANGE = (0.04, 4)
 
@@ -244,8 +245,7 @@ if __name__ == "__main__":
 
 
 
-    N_DATASETS = 24
-    N_TRIALS = 3
+
 
 
     # TEST 1
@@ -262,7 +262,7 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, 'Confusion Matrix (3 Trials), Prelim')
-    w3_2.plot_confusion_matrix(fn, 'Confusion Matrix (3 Trials), Prelim')
+    w3_2.plot_heatmap(fn, r'Heatmap (Gaussian sampling + posterior, $\sigma_{frac} = 0.25$)')
+    w3_2.plot_confusion_matrix(fn, 'Confusion Matrix (Gaussian sampling + posterior, $\sigma_{frac} = 0.25$)')
 
     exit()

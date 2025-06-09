@@ -57,64 +57,69 @@ if __name__ == "__main__":
 
 
 
-    N_DATASETS = 24
-    N_TRIALS = 30
+    N_DATASETS = 96
+    # N_TRIALS = 30
 
     # 4_11
 
+    # we prob want to do this for n_trials = 5 10 15 20 30 50
+
+    N_TRIALS_LIST = [5, 10, 15, 20, 30, 50]
+
     # BASELINE
 
-    fn = "./results/UU_D" + str(N_DATASETS) + "_shape1_T" + str(N_TRIALS) + ".csv"
+    for N_TRIALS in N_TRIALS_LIST:
+        fn = "./results/UU_D" + str(N_DATASETS) + "_shape1_T" + str(N_TRIALS) + ".csv"
 
-    w3_2.model_selection(
-        ramp_params_grid, step_params_grid,
-        uniform_ramp_posterior, uniform_step_posterior,  # generating
-        uniform_ramp_posterior, uniform_step_posterior,  # inference
-        N_DATASETS=N_DATASETS, N_TRIALS=N_TRIALS,
-        ramp_gamma_shape=1, step_gamma_shape=1,
-        # format: generating: G/U; inference: G/U; n. datasets, n. trials
-        # if G, append std_fraction on front
-        save_to=os.path.join(os.getcwd(), fn)
-    )
+        w3_2.model_selection(
+            ramp_params_grid, step_params_grid,
+            uniform_ramp_posterior, uniform_step_posterior,  # generating
+            uniform_ramp_posterior, uniform_step_posterior,  # inference
+            N_DATASETS=N_DATASETS, N_TRIALS=N_TRIALS,
+            ramp_gamma_shape=1, step_gamma_shape=1,
+            # format: generating: G/U; inference: G/U; n. datasets, n. trials
+            # if G, append std_fraction on front
+            save_to=os.path.join(os.getcwd(), fn)
+        )
 
-    w3_2.plot_heatmap(fn, 'Uniform prior, shape=1, ' + str(N_TRIALS) + ' trials/dataset')
-    w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=1, ' + str(N_TRIALS) + ' trials/dataset',
-                               save_name=fn[:-4] + '.png')
+        w3_2.plot_heatmap(fn, 'Uniform prior, shape=1, ' + str(N_TRIALS) + ' trials/dataset')
+        w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=1, ' + str(N_TRIALS) + ' trials/dataset',
+                                   save_name=fn[:-4] + '.png')
 
-    # TEST 1
+        # TEST 1
 
-    fn = "./results/UU_D" + str(N_DATASETS) + "_shape3_T" + str(N_TRIALS) + ".csv"
+        fn = "./results/UU_D" + str(N_DATASETS) + "_shape3_T" + str(N_TRIALS) + ".csv"
 
-    w3_2.model_selection(
-        ramp_params_grid, step_params_grid,
-        uniform_ramp_posterior, uniform_step_posterior,  # generating
-        uniform_ramp_posterior, uniform_step_posterior,  # inference
-        N_DATASETS=N_DATASETS, N_TRIALS=N_TRIALS,
-        ramp_gamma_shape=5, step_gamma_shape=5,
-        # format: generating: G/U; inference: G/U; n. datasets, n. trials
-        # if G, append std_fraction on front
-        save_to=os.path.join(os.getcwd(), fn)
-    )
+        w3_2.model_selection(
+            ramp_params_grid, step_params_grid,
+            uniform_ramp_posterior, uniform_step_posterior,  # generating
+            uniform_ramp_posterior, uniform_step_posterior,  # inference
+            N_DATASETS=N_DATASETS, N_TRIALS=N_TRIALS,
+            ramp_gamma_shape=5, step_gamma_shape=5,
+            # format: generating: G/U; inference: G/U; n. datasets, n. trials
+            # if G, append std_fraction on front
+            save_to=os.path.join(os.getcwd(), fn)
+        )
 
-    w3_2.plot_heatmap(fn, 'Uniform prior, shape=3, ' + str(N_TRIALS) + ' trials/dataset')
-    w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=3, ' + str(N_TRIALS) + ' trials/dataset',
-                               save_name=fn[:-4] + '.png')
+        w3_2.plot_heatmap(fn, 'Uniform prior, shape=3, ' + str(N_TRIALS) + ' trials/dataset')
+        w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=3, ' + str(N_TRIALS) + ' trials/dataset',
+                                   save_name=fn[:-4] + '.png')
 
-    # TEST 2
+        # TEST 2
 
-    fn = "./results/UU_D" + str(N_DATASETS) + "_shape5_T" + str(N_TRIALS) + ".csv"
+        fn = "./results/UU_D" + str(N_DATASETS) + "_shape5_T" + str(N_TRIALS) + ".csv"
 
-    w3_2.model_selection(
-        ramp_params_grid, step_params_grid,
-        uniform_ramp_posterior, uniform_step_posterior,  # generating
-        uniform_ramp_posterior, uniform_step_posterior,  # inference
-        N_DATASETS=N_DATASETS, N_TRIALS=N_TRIALS,
-        ramp_gamma_shape=9, step_gamma_shape=9,
-        # format: generating: G/U; inference: G/U; n. datasets, n. trials
-        # if G, append std_fraction on front
-        save_to=os.path.join(os.getcwd(), fn)
-    )
+        w3_2.model_selection(
+            ramp_params_grid, step_params_grid,
+            uniform_ramp_posterior, uniform_step_posterior,  # generating
+            uniform_ramp_posterior, uniform_step_posterior,  # inference
+            N_DATASETS=N_DATASETS, N_TRIALS=N_TRIALS,
+            ramp_gamma_shape=9, step_gamma_shape=9,
+            # format: generating: G/U; inference: G/U; n. datasets, n. trials
+            # if G, append std_fraction on front
+            save_to=os.path.join(os.getcwd(), fn)
+        )
 
-    w3_2.plot_heatmap(fn, 'Uniform prior, shape=5, ' + str(N_TRIALS) + ' trials/dataset')
-    w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=5, ' + str(N_TRIALS) + ' trials/dataset',
-                               save_name=fn[:-4] + '.png')
+        w3_2.plot_heatmap(fn, 'Uniform prior, shape=5, ' + str(N_TRIALS) + ' trials/dataset')
+        w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=5, ' + str(N_TRIALS) + ' trials/dataset',
+                                   save_name=fn[:-4] + '.png')
