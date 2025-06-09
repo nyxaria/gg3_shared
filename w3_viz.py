@@ -152,7 +152,7 @@ def task_3_1_1_visualize_map_error(model_type, true_param_specs, inference_param
     inference_params_grid = w3_utils.make_params_grid(inference_param_specs)
 
     M_inference = len(inference_param_specs[param1_name])
-    cache_dir = os.path.join("plots", "cache", f"map_error_{model_type}_{M_inference}_{K}_{n_trials}_{T}_{Rh}")
+    cache_dir = os.path.join("plots", "cache", f"map_error_{model_type}_{true_param_specs['x0']}_{M_inference}_{K}_{n_trials}_{T}_{Rh}")
     os.makedirs(cache_dir, exist_ok=True)
     
     tasks = [
@@ -228,7 +228,7 @@ def task_3_1_2_analyze_estimation_2d(model_type, true_params, n_trials_list, par
     else:
         estimation_errors = {p: [] for p in param_names}
         posterior_stds = {p: [] for p in param_names}
-
+    
         for n_trials in n_trials_list:
             if model_type == 'ramp':
                 model = Model(beta=true_params['beta'], sigma=true_params['sigma'], x0=true_params['x0'], K=K, Rh=Rh)
@@ -450,13 +450,13 @@ if __name__ == "__main__":
     ramp_true_param_specs = OD([
         ('beta', np.linspace(0, 4, M_TRUE_GRID)),
         ('sigma', np.linspace(0.04, 4, M_TRUE_GRID)),
-        ('x0', 0.2),
+        ('x0', 0.0),
         ('K', K), ('T', T_MS), ('Rh', RH)
     ])
     ramp_inference_param_specs = OD([
         ('beta', np.linspace(0, 4, M_INFERENCE_GRID)),
         ('sigma', np.linspace(0.04, 4, M_INFERENCE_GRID)),
-        ('x0', 0.2),
+        ('x0', 0.0),
         ('K', K), ('T', T_MS), ('Rh', RH)
     ])
     task_3_1_1_visualize_map_error('ramp', ramp_true_param_specs, ramp_inference_param_specs, n_trials=N_MAP_TRIALS, K=K, T=T_MS, Rh=RH, show=args.show)
@@ -516,7 +516,7 @@ if __name__ == "__main__":
     task_3_1_1_visualize_map_error('step', step_true_param_specs, step_inference_param_specs, n_trials=N_MAP_TRIALS, K=K, T=T_MS, Rh=RH, show=args.show)
 
     # 3.1.2
-    n_trials_list = [1, 5, 10, 20, 50, 100, 200, 400]
+    n_trials_list = [1, 5, 10, 20, 50, 100, 200]
     step_params_grid_2d = w3_utils.make_params_grid(step_inference_param_specs)
     task_3_1_2_analyze_estimation_2d('step', step_true_params, n_trials_list, step_params_grid_2d, K=K, T=T_MS, Rh=RH, show=args.show)
 

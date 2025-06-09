@@ -56,8 +56,8 @@ if __name__ == "__main__":
 
 
 
-    N_DATASETS = 24
-    N_TRIALS = 10
+    N_DATASETS = 240
+    N_TRIALS = 3
 
 
     # TEST 1
@@ -158,5 +158,48 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, ' + str(N_TRIALS) + ' trials/dataset, Rh=20, x0=0.5')
-    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, ' + str(N_TRIALS) + ' trials/dataset, Rh=20, x0=0.5', save_name=fn[:-4] + '.png')
+    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset, Rh=20, x0=0.5')
+    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset, Rh=20, x0=0.5', save_name=fn[:-4] + '.png')
+
+
+
+    # TEST 3
+
+    STD_FRACTION = 0.125
+
+    gauss_ramp_posterior = w3_utils.gaussian_prior(
+        ramp_params_grid,
+        mu={
+            "beta": mean(*BETA_RANGE),
+            "sigma": mean(*SIGMA_RANGE)
+        },
+        cov={
+            ("beta", "beta"): var(*BETA_RANGE, STD_FRACTION),
+            ("sigma", "sigma"): var(*SIGMA_RANGE, STD_FRACTION)
+        })
+
+    gauss_step_posterior = w3_utils.gaussian_prior(
+        step_params_grid,
+        mu={
+            "m": mean(*M_RANGE),
+            "r": 1
+        },
+        cov={
+            ("m", "m"): var(*M_RANGE, STD_FRACTION),
+            ("r", "r"): var(*R_RANGE, STD_FRACTION)
+        })
+
+    fn = "./results/0.25GU_D" + str(N_DATASETS) + "_T" + str(N_TRIALS) + ".csv"
+
+    w3_2.model_selection(
+        ramp_params_grid, step_params_grid,
+        uniform_ramp_posterior, uniform_step_posterior,  # generating
+        gauss_ramp_posterior, gauss_step_posterior,  # inference
+        N_DATASETS=N_DATASETS, N_TRIALS=N_TRIALS,
+        # format: generating: G/U; inference: G/U; n. datasets, n. trials
+        # if G, append std_fraction on front
+        save_to=os.path.join(os.getcwd(), fn)
+    )
+
+    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset, Rh=20, x0=0.5')
+    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset, Rh=20, x0=0.5', save_name=fn[:-4] + '.png')
