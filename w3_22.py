@@ -13,6 +13,7 @@ var = lambda a, b, frac: ((b-a) * frac) ** 2
 mean = lambda a, b: (b+a)/2
 
 if __name__ == "__main__":
+    os.makedirs('plots', exist_ok=True)
     K = 25
     T_MS = 100
     RH = 20
@@ -74,8 +75,8 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, 'Uniform prior, ' + str(N_TRIALS) + ' trials/dataset, Rh=20, x0=0.5')
-    w3_2.plot_confusion_matrix(fn, 'Uniform prior, ' + str(N_TRIALS) + ' trials/dataset, Rh=20, x0=0.5', save_name=fn[:-4] + '.png')
+    w3_2.plot_heatmap(fn, 'Uniform prior, ' + str(N_TRIALS) + ' trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_heatmap.png')
+    w3_2.plot_confusion_matrix(fn, 'Uniform prior, ' + str(N_TRIALS) + ' trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_confmat.png')
 
     # TEST 2
 
@@ -115,8 +116,8 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.5$, ' + str(N_TRIALS) + ' trials/dataset, Rh=20, x0=0.5')
-    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.5$, ' + str(N_TRIALS) + ' trials/dataset, Rh=20, x0=0.5', save_name=fn[:-4] + '.png')
+    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.5$, ' + str(N_TRIALS) + ' trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_heatmap.png')
+    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.5$, ' + str(N_TRIALS) + ' trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_confmat.png')
 
 
 
@@ -158,12 +159,12 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset, Rh=20, x0=0.5')
-    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset, Rh=20, x0=0.5', save_name=fn[:-4] + '.png')
+    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_heatmap.png')
+    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_confmat.png')
 
 
 
-    # TEST 3
+    # TEST 4
 
     STD_FRACTION = 0.125
 
@@ -189,7 +190,7 @@ if __name__ == "__main__":
             ("r", "r"): var(*R_RANGE, STD_FRACTION)
         })
 
-    fn = "./results/0.25GU_D" + str(N_DATASETS) + "_T" + str(N_TRIALS) + ".csv"
+    fn = "./results/0.125GU_D" + str(N_DATASETS) + "_T" + str(N_TRIALS) + ".csv"
 
     w3_2.model_selection(
         ramp_params_grid, step_params_grid,
@@ -201,5 +202,5 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset, Rh=20, x0=0.5')
-    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset, Rh=20, x0=0.5', save_name=fn[:-4] + '.png')
+    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.125$, 3 trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_heatmap.png')
+    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.125$, 3 trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_confmat.png')

@@ -9,11 +9,22 @@ import w3_2
 
 import w3_utils
 from models_hmm import RampModelHMM
+# make text larger
+plt.rcParams.update({
+    'font.size': 14,
+    'axes.titlesize': 16,
+    'axes.labelsize': 14,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 12,
+    'figure.titlesize': 18
+})
 
 var = lambda a, b, frac: ((b-a) * frac) ** 2
 mean = lambda a, b: (b+a)/2
 
 if __name__ == "__main__":
+    os.makedirs('plots', exist_ok=True)
     K = 25
     T_MS = 100
     RH = 20
@@ -77,13 +88,32 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, 'Uniform prior, shape=1, ' + str(N_TRIALS) + ' trials/dataset')
+    w3_2.plot_heatmap(fn, 'Uniform prior, shape=1, ' + str(N_TRIALS) + ' trials/dataset', save_name=f'plots/task_4_1_1_{os.path.basename(fn)[:-4]}_heatmap.png')
     w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=1, ' + str(N_TRIALS) + ' trials/dataset',
-                               save_name=fn[:-4] + '.png')
+                               save_name=f'plots/task_4_1_1_{os.path.basename(fn)[:-4]}_confmat.png')
 
     # TEST 1
 
     fn = "./results/UU_D" + str(N_DATASETS) + "_shape3_T" + str(N_TRIALS) + ".csv"
+
+    w3_2.model_selection(
+        ramp_params_grid, step_params_grid,
+        uniform_ramp_posterior, uniform_step_posterior,  # generating
+        uniform_ramp_posterior, uniform_step_posterior,  # inference
+        N_DATASETS=N_DATASETS, N_TRIALS=N_TRIALS,
+        ramp_gamma_shape=3, step_gamma_shape=3,
+        # format: generating: G/U; inference: G/U; n. datasets, n. trials
+        # if G, append std_fraction on front
+        save_to=os.path.join(os.getcwd(), fn)
+    )
+
+    w3_2.plot_heatmap(fn, 'Uniform prior, shape=3, ' + str(N_TRIALS) + ' trials/dataset', save_name=f'plots/task_4_1_1_{os.path.basename(fn)[:-4]}_heatmap.png')
+    w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=3, ' + str(N_TRIALS) + ' trials/dataset',
+                               save_name=f'plots/task_4_1_1_{os.path.basename(fn)[:-4]}_confmat.png')
+
+    # TEST 2
+
+    fn = "./results/UU_D" + str(N_DATASETS) + "_shape5_T" + str(N_TRIALS) + ".csv"
 
     w3_2.model_selection(
         ramp_params_grid, step_params_grid,
@@ -96,25 +126,6 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, 'Uniform prior, shape=3, ' + str(N_TRIALS) + ' trials/dataset')
-    w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=3, ' + str(N_TRIALS) + ' trials/dataset',
-                               save_name=fn[:-4] + '.png')
-
-    # TEST 2
-
-    fn = "./results/UU_D" + str(N_DATASETS) + "_shape5_T" + str(N_TRIALS) + ".csv"
-
-    w3_2.model_selection(
-        ramp_params_grid, step_params_grid,
-        uniform_ramp_posterior, uniform_step_posterior,  # generating
-        uniform_ramp_posterior, uniform_step_posterior,  # inference
-        N_DATASETS=N_DATASETS, N_TRIALS=N_TRIALS,
-        ramp_gamma_shape=9, step_gamma_shape=9,
-        # format: generating: G/U; inference: G/U; n. datasets, n. trials
-        # if G, append std_fraction on front
-        save_to=os.path.join(os.getcwd(), fn)
-    )
-
-    w3_2.plot_heatmap(fn, 'Uniform prior, shape=5, ' + str(N_TRIALS) + ' trials/dataset')
+    w3_2.plot_heatmap(fn, 'Uniform prior, shape=5, ' + str(N_TRIALS) + ' trials/dataset', save_name=f'plots/task_4_1_1_{os.path.basename(fn)[:-4]}_heatmap.png')
     w3_2.plot_confusion_matrix(fn, 'Uniform prior, shape=5, ' + str(N_TRIALS) + ' trials/dataset',
-                               save_name=fn[:-4] + '.png')
+                               save_name=f'plots/task_4_1_1_{os.path.basename(fn)[:-4]}_confmat.png')

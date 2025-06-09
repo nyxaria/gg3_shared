@@ -5,6 +5,16 @@ import argparse
 from scipy.optimize import curve_fit
 import traceback
 from utils import calculate_psth, calculate_fano_factor, generate_model_parameters
+# make text larger
+plt.rcParams.update({
+    'font.size': 14,
+    'axes.titlesize': 16,
+    'axes.labelsize': 14,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 12,
+    'figure.titlesize': 18
+})
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--show', action='store_true')

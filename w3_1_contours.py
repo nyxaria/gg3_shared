@@ -10,8 +10,16 @@ import argparse
 
 import w3_utils
 from models_hmm import RampModelHMM, StepModelHMM
-
 # make text larger
+plt.rcParams.update({
+    'font.size': 14,
+    'axes.titlesize': 16,
+    'axes.labelsize': 14,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 12,
+    'figure.titlesize': 18
+})
 
 
 def task_3_1_1_visualize_posterior_2d(model_type, true_params, n_trials, param_specs, params_grid, K=50, T=100, Rh=50,

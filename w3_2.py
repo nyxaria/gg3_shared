@@ -116,7 +116,7 @@ def model_selection(ramp_params_grid, step_params_grid, gen_ramp, gen_step, ramp
     return results
 
 
-def plot_heatmap(results_df, title='Untitled Heatmap'):
+def plot_heatmap(results_df, title='Untitled Heatmap', save_name=None):
     """
     Plot heatmaps comparing model performance on ramp and step data
     
@@ -162,6 +162,8 @@ def plot_heatmap(results_df, title='Untitled Heatmap'):
     plt.title(title)
     plt.colorbar(im2, ax=ax2)
 
+    if save_name:
+        plt.savefig(save_name)
     plt.show()
 
 
@@ -275,6 +277,7 @@ def _test_worker(args):
 
 
 if __name__ == "__main__":
+    os.makedirs('plots', exist_ok=True)
     K = 25
     T_MS = 100
     RH = 50
@@ -352,6 +355,7 @@ if __name__ == "__main__":
     # Use log scale for sigma axis since it was generated using exp(linspace)
     plt.yscale('log')
 
+    plt.savefig('plots/task_3_2_heatmap.png')
     plt.show()
 
 

@@ -3,6 +3,16 @@ import matplotlib.pyplot as plt
 import models
 import argparse
 from utils import calculate_fano_factor, generate_model_parameters, generate_random_model_parameters
+# make text larger
+plt.rcParams.update({
+    'font.size': 14,
+    'axes.titlesize': 16,
+    'axes.labelsize': 14,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 12,
+    'figure.titlesize': 18
+})
 
 RUNNING_IN_JUPYTER = True
 if not RUNNING_IN_JUPYTER:

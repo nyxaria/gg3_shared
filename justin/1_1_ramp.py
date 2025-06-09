@@ -10,6 +10,16 @@ import torch.optim as optim
 import sklearn
 
 plt.style.use('ggplot')
+# make text larger
+plt.rcParams.update({
+    'font.size': 14,
+    'axes.titlesize': 16,
+    'axes.labelsize': 14,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 12,
+    'figure.titlesize': 18
+})
 
 num_rasters=3
 num_param1=2

@@ -177,6 +177,7 @@ var = lambda a, b, frac: ((b-a) * frac) ** 2
 mean = lambda a, b: (b+a)/2
 
 if __name__ == "__main__":
+    os.makedirs('plots', exist_ok=True)
     K = 25
     T_MS = 100
     RH = 50
@@ -262,7 +263,7 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, 'Confusion Matrix (3 Trials), Prelim')
-    w3_2.plot_confusion_matrix(fn, 'Confusion Matrix (3 Trials), Prelim')
+    w3_2.plot_heatmap(fn, 'Confusion Matrix (3 Trials), Prelim', save_name=f'plots/task_3_2_3_{os.path.basename(fn)[:-4]}_heatmap.png')
+    w3_2.plot_confusion_matrix(fn, 'Confusion Matrix (3 Trials), Prelim', save_name=f'plots/task_3_2_3_{os.path.basename(fn)[:-4]}_confmat.png')
 
     exit()
