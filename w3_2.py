@@ -163,7 +163,7 @@ def plot_heatmap(results_df, title='Untitled Heatmap'):
     plt.show()
 
 
-def plot_confusion_matrix(csv_path, plot_title):
+def plot_confusion_matrix(csv_path, plot_title, save_name='confmat'):
     """
     Plot confusion matrix from results CSV and return accuracy.
 
@@ -202,141 +202,44 @@ def plot_confusion_matrix(csv_path, plot_title):
     plt.tight_layout()
     plt.show()
 
+    plt.savefig(save_name)
+
     accuracy = (conf_matrix[0, 0] + conf_matrix[1, 1]) / np.sum(conf_matrix)
-    print(f'Overall Accuracy: {accuracy:.2%}')
-    return accuracy
+    print(f'Overall HMM Accuracy: {accuracy:.2%}')
 
-# this is deprecated, ignore
-def plot_heatmaps(ramp_params_grid, step_params_grid, gen_ramp, gen_step, ramp_post, step_post,
-                  N_DATASETS=100, N_TRIALS=100,
-                  ramp_gamma_shape=None, step_gamma_shape=None,
-                  save_to=None):
-    """
-    Plot heatmaps comparing model performance on ramp and step data
+    if 'ML_LLR_step' in results_df and 'ML_LLR_ramp' in results_df:
+        # additionally plot conf matrix for ML (1.4)
 
-    Parameters:
-    -----------
-    ramp_params_grid: dict
-        Grid of parameters for ramp model
-    step_params_grid: dict
-        Grid of parameters for step model
-    gen_ramp: function
-        PDF grid for ramp data
-    gen_step: function
-        PDF grid for step data
-    ramp_post: array-like
-        Ramp model posterior
-    step_post: array-like
-        Step model posterior
-    N_DATASETS: int
-        Number of datasets to generate
-    """
+        ramp_true = np.ones(len(results_df['ML_LLR_ramp']))
+        step_true = np.zeros(len(results_df['ML_LLR_step']))
 
-    ramp_data_ramp_bf = []
-    ramp_data_step_bf = []
-    step_data_ramp_bf = []
-    step_data_step_bf = []
+        ramp_predictions = (results_df['ML_LLR_ramp'] > 0).astype(int)
+        step_predictions = (results_df['ML_LLR_step'] > 0).astype(int)
+
+        y_true = np.concatenate([ramp_true, step_true])
+        y_pred = np.concatenate([ramp_predictions, step_predictions])
+
+        conf_matrix = np.zeros((2, 2))
+        conf_matrix[0, 0] = np.sum((y_true == 0) & (y_pred == 0))  # True Negatives
+        conf_matrix[0, 1] = np.sum((y_true == 0) & (y_pred == 1))  # False Positives
+        conf_matrix[1, 0] = np.sum((y_true == 1) & (y_pred == 0))  # False Negatives
+        conf_matrix[1, 1] = np.sum((y_true == 1) & (y_pred == 1))  # True Positives
+
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(conf_matrix, annot=True, fmt='.1f', cmap='Blues',
+                    xticklabels=['Step', 'Ramp'],
+                    yticklabels=['Step', 'Ramp'])
+        plt.title(plot_title + ' - ML (1.4)')
+        plt.xlabel('Predicted Label')
+        plt.ylabel('True Label')
+        plt.tight_layout()
+        plt.show()
+
+        plt.savefig(save_name + ' - ML (1.4)')
 
 
-    # true vals
-    betas = []
-    sigmas = []
 
-    ms = []
-    rs = []
-
-    for id in range(N_DATASETS):
-        ramp_params = w3_utils.sample_from_grid(gen_ramp, ramp_params_grid)
-        ramp_data, _, _ = RampModelHMM(beta=ramp_params['beta'],
-                                       sigma=ramp_params['sigma'],
-                                       Rh=ramp_params['Rh'],
-                                       isi_gamma_shape=ramp_gamma_shape
-                                       ).simulate(Ntrials=N_TRIALS, T=ramp_params['T'])
-
-        # calculate and log; preceding is the tested model, proceeding is the true model
-        ramp_LLH_ramp = w3_utils.ramp_LLH(ramp_data, ramp_params_grid)
-        step_LLH_ramp = w3_utils.step_LLH(ramp_data, step_params_grid)
-
-        ramp_bf_ramp = w3_utils.marginal_likelihood(ramp_LLH_ramp, ramp_post)
-        step_bf_ramp = w3_utils.marginal_likelihood(step_LLH_ramp, step_post)
-
-        ramp_data_ramp_bf.append(ramp_bf_ramp)
-        ramp_data_step_bf.append(step_bf_ramp)
-
-        betas.append(ramp_params['beta'])
-        sigmas.append(ramp_params['sigma'])
-
-        step_params = w3_utils.sample_from_grid(gen_step, step_params_grid)
-        step_data, _, _ = StepModelHMM(m=step_params['m'],
-                                       r=step_params['r'],
-                                       Rh=step_params['Rh'],
-                                       isi_gamma_shape=step_gamma_shape
-                                       ).simulate_exact(Ntrials=50, T=step_params['T'])
-
-        ramp_LLH_step = w3_utils.ramp_LLH(step_data, ramp_params_grid)
-        step_LLH_step = w3_utils.step_LLH(step_data, step_params_grid)
-
-        ramp_bf_step = w3_utils.marginal_likelihood(ramp_LLH_step, ramp_post)
-        step_bf_step = w3_utils.marginal_likelihood(step_LLH_step, step_post)
-
-        step_data_ramp_bf.append(ramp_bf_step)
-        step_data_step_bf.append(step_bf_step)
-        ms.append(step_params['m'])
-        rs.append(step_params['r'])
-
-        if id % 10 == 0:
-            print('completed', id, 'of', N_DATASETS)
-
-    # save
-    if save_to:
-        results_df = pd.DataFrame({
-            'beta': betas,
-            'sigma': sigmas,
-            'ramp_data_ramp_bf': ramp_data_ramp_bf,
-            'ramp_data_step_bf': ramp_data_step_bf,
-            'm': ms,
-            'r': rs,
-            'step_data_ramp_bf': step_data_ramp_bf,
-            'step_data_step_bf': step_data_step_bf
-        })
-
-        os.makedirs(os.path.dirname(save_to), exist_ok=True)
-        results_df.to_csv(save_to, index=False)
-
-
-    # heatmap
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
-
-    # Ramp data heatmap
-    grid_x1, grid_y1 = np.mgrid[0:4:100j, 0.04:4:100j] # TODO make dynamic
-    grid_z1 = griddata((betas, sigmas),
-                       np.array(ramp_data_ramp_bf) - np.array(ramp_data_step_bf),
-                       (grid_x1, grid_y1),
-                       method='cubic')
-
-    im1 = ax1.pcolormesh(grid_x1, grid_y1, grid_z1, cmap='coolwarm', shading='auto')
-    ax1.scatter(betas, sigmas, c='black', s=20, alpha=0.5)
-    ax1.set_xlabel('beta')
-    ax1.set_ylabel('sigma')
-    ax1.set_title('Ramp Data: Log(Ramp BF/Step BF)')
-    ax1.set_yscale('log')
-    plt.colorbar(im1, ax=ax1)
-
-    # Step data heatmap
-    grid_x2, grid_y2 = np.mgrid[25:75:100j, 1:6:100j] # TODO make dynamic
-    grid_z2 = griddata((ms, rs),
-                       np.array(step_data_step_bf) - np.array(step_data_ramp_bf),
-                       (grid_x2, grid_y2),
-                       method='cubic')
-
-    im2 = ax2.pcolormesh(grid_x2, grid_y2, grid_z2, cmap='coolwarm', shading='auto')
-    ax2.scatter(ms, rs, c='black', s=20, alpha=0.5)
-    ax2.set_xlabel('m')
-    ax2.set_ylabel('r')
-    ax2.set_title('Step Data: Log(Step BF/Ramp BF)')
-    plt.colorbar(im2, ax=ax2)
-
-    plt.show()
+    return
 
 
 def _test_worker(args):

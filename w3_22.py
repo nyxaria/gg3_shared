@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
 
 
-    N_DATASETS = 96
+    N_DATASETS = 120
     N_TRIALS = 3
 
 
@@ -74,8 +74,8 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, 'Uniform prior, 5 trials/dataset')
-    w3_2.plot_confusion_matrix(fn, 'Uniform prior, 5 trials/dataset')
+    w3_2.plot_heatmap(fn, 'Uniform prior, 3 trials/dataset')
+    w3_2.plot_confusion_matrix(fn, 'Uniform prior, 3 trials/dataset', save_name=fn[:-4] + '.png')
 
     # TEST 2
 
@@ -115,8 +115,8 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.5$, 5 trials/dataset')
-    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.5$, 5 trials/dataset')
+    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.5$, 3 trials/dataset')
+    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.5$, 3 trials/dataset', save_name=fn[:-4] + '.png')
 
 
 
@@ -158,5 +158,5 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 5 trials/dataset')
-    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 5 trials/dataset')
+    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset')
+    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset', save_name=fn[:-4] + '.png')

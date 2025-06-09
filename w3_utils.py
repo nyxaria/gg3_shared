@@ -59,6 +59,8 @@ def ramp_LLH(data, params):
             trial_norm = inference.hmm_normalizer(pi, Tmat, trial_llh)
             norm += trial_norm
 
+            # trial_norm ranges from ~-300 (off) to ~-200 (correct)
+
             # plt.matshow(np.exp(trial_llh))
             # plt.show()
 
@@ -123,7 +125,8 @@ def step_LLH(data, params):
 
         norm = 0
         for trial_llh in LLH:
-            norm += inference.hmm_normalizer(pi, Tmat, trial_llh)
+            trial_norm = inference.hmm_normalizer(pi, Tmat, trial_llh)
+            norm += trial_norm
 
         return norm
 
@@ -372,37 +375,42 @@ def posterior_std_dev(probs_grid, params_grid, posterior_means, log=True):
 if __name__ == "__main__":
 
     T = 100
-    # Rh = 500
+    Rh = 50
+    N_TRIALS = 10
 
-    '''specs = OD([('m', [25, 75, 30]),
+    specs = OD([('m', [25, 75, 15]),
                 ('r', [1, 6, 6]),
                 ('T', T),
                 ('Rh', Rh)])
 
     params_grid = make_params_grid(specs)
 
-    true_m = 1
-    true_r = 20
+    step_true_params = {'m': 50, 'r': 2, 'x0': 0.2}
 
-    data, _, _ = StepModelHMM(m=true_m, r=true_r, Rh=Rh).simulate_exact(Ntrials=100, T=T, delay_compensation=True)
+
+    data, _, _ = StepModelHMM(m=step_true_params['m'], r=step_true_params['r'], Rh=Rh).simulate_exact(Ntrials=N_TRIALS, T=T, delay_compensation=True)
 
     LLH_probs_grid = step_LLH(data, params_grid)
-    prior_probs_grid = uniform_posterior(params_grid)
+    prior_probs_grid = uniform_prior(params_grid)
 
     npost = norm_posterior(LLH_probs_grid, prior_probs_grid)
     plt.matshow(np.exp(npost))
     plt.show()
 
 
+    print(step_true_params)
+    print(expectation(npost, params_grid))
 
-    print(expectation(npost))'''
+    get_param_values(params_grid, 'm')
+    get_param_values(params_grid, 'r')
+
 
     '''specs = OD([('beta', [0, 1, 10]),
                 ('sigma', [0, 0.5, 10]),
                 ('T', T),
                 ('Rh', Rh)])'''
 
-    K = 25
+    '''K = 25
     T_MS = 100
     RH = 500
     M_GRID = 7
@@ -422,7 +430,7 @@ if __name__ == "__main__":
 
 
 
-    data, _, _ = RampModelHMM(beta=true_params['beta'], sigma=true_params['sigma'], Rh=RH).simulate(Ntrials=71, T=T_MS)
+    data, _, _ = RampModelHMM(beta=true_params['beta'], sigma=true_params['sigma'], Rh=RH).simulate(Ntrials=1, T=T_MS)
 
     LLH_probs_grid = ramp_LLH(data, params_grid)
     prior_probs_grid = uniform_prior(params_grid)
@@ -430,7 +438,6 @@ if __name__ == "__main__":
     npost = norm_posterior(LLH_probs_grid, prior_probs_grid)
 
     plt.matshow(np.exp(npost))
-
     plt.show()
 
-    print(expectation(npost, params_grid))
+    print(expectation(npost, params_grid))'''
