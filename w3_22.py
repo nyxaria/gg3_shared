@@ -15,9 +15,9 @@ mean = lambda a, b: (b+a)/2
 if __name__ == "__main__":
     K = 25
     T_MS = 100
-    RH = 50
+    RH = 20
     M_GRID = 15
-    X0 = 0.2
+    X0 = 0.5
     # N_DATASETS = 50
     # N_TRIALS = 5
 
@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
 
 
-    N_DATASETS = 120
+    N_DATASETS = 24
     N_TRIALS = 3
 
 
@@ -74,8 +74,8 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, 'Uniform prior, 3 trials/dataset')
-    w3_2.plot_confusion_matrix(fn, 'Uniform prior, 3 trials/dataset', save_name=fn[:-4] + '.png')
+    w3_2.plot_heatmap(fn, 'Uniform prior, 3 trials/dataset, Rh=20, x0=0.5')
+    w3_2.plot_confusion_matrix(fn, 'Uniform prior, 3 trials/dataset, Rh=20, x0=0.5', save_name=fn[:-4] + '.png')
 
     # TEST 2
 
@@ -115,8 +115,8 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.5$, 3 trials/dataset')
-    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.5$, 3 trials/dataset', save_name=fn[:-4] + '.png')
+    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.5$, 3 trials/dataset, Rh=20, x0=0.5')
+    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.5$, 3 trials/dataset, Rh=20, x0=0.5', save_name=fn[:-4] + '.png')
 
 
 
@@ -158,5 +158,5 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset')
-    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset', save_name=fn[:-4] + '.png')
+    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset, Rh=20, x0=0.5')
+    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset, Rh=20, x0=0.5', save_name=fn[:-4] + '.png')

@@ -22,6 +22,7 @@ def _model_selection_worker(args):
     ramp_data, _, _ = RampModelHMM(beta=ramp_params['beta'],
                                    sigma=ramp_params['sigma'],
                                    Rh=ramp_params['Rh'],
+                                   x0=ramp_params['x0'] if 'x0' in ramp_params else 0.2,
                                    isi_gamma_shape=ramp_gamma_shape
                                    ).simulate(Ntrials=N_TRIALS_RAMP, T=ramp_params['T'])
 
@@ -35,6 +36,7 @@ def _model_selection_worker(args):
     step_data, _, _ = StepModelHMM(m=step_params['m'],
                                    r=step_params['r'],
                                    Rh=step_params['Rh'],
+                                   x0=step_params['x0'] if 'x0' in step_params else 0.2,
                                    isi_gamma_shape=step_gamma_shape
                                    ).simulate_exact(Ntrials=N_TRIALS_STEP, T=step_params['T'])
 

@@ -16,9 +16,9 @@ mean = lambda a, b: (b+a)/2
 if __name__ == "__main__":
     K = 25
     T_MS = 100
-    RH = 50
+    RH = 20
     M_GRID = 15
-    X0 = 0.2
+    X0 = 0.5
     # N_DATASETS = 50
     # N_TRIALS = 5
 
@@ -57,8 +57,8 @@ if __name__ == "__main__":
 
 
 
-    N_DATASETS = 72
-    N_TRIALS = 50
+    N_DATASETS = 24
+    N_TRIALS = 30
 
     # 4_11
 
