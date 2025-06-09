@@ -165,7 +165,7 @@ def plot_heatmap(results_df, title='Untitled Heatmap'):
     plt.show()
 
 
-def plot_confusion_matrix(csv_path, plot_title, save_name='confmat'):
+def plot_confusion_matrix(csv_path, plot_title, save_name='confmat', normalize=True, fig_size_factor=0.7):
     """
     Plot confusion matrix from results CSV and return accuracy.
 
@@ -194,17 +194,21 @@ def plot_confusion_matrix(csv_path, plot_title, save_name='confmat'):
     conf_matrix[1, 0] = np.sum((y_true == 1) & (y_pred == 0))  # False Negatives
     conf_matrix[1, 1] = np.sum((y_true == 1) & (y_pred == 1))  # True Positives
 
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(conf_matrix, annot=True, fmt='.1f', cmap='Blues',
+    if normalize:
+        conf_matrix /= len(y_true)
+
+        print(conf_matrix)
+
+    plt.figure(figsize=(8 * fig_size_factor, 6 * fig_size_factor))
+    sns.heatmap(conf_matrix, annot=True, fmt='.3f', cmap='Blues',
                 xticklabels=['Step', 'Ramp'],
                 yticklabels=['Step', 'Ramp'])
     plt.title(plot_title)
     plt.xlabel('Predicted Label')
     plt.ylabel('True Label')
     plt.tight_layout()
-    plt.show()
-
     plt.savefig(save_name)
+    plt.show()
 
     accuracy = (conf_matrix[0, 0] + conf_matrix[1, 1]) / np.sum(conf_matrix)
     print(f'Overall HMM Accuracy: {accuracy:.2%}')
@@ -235,9 +239,11 @@ def plot_confusion_matrix(csv_path, plot_title, save_name='confmat'):
         plt.xlabel('Predicted Label')
         plt.ylabel('True Label')
         plt.tight_layout()
-        plt.show()
 
         plt.savefig(save_name + ' - ML (1.4)')
+        plt.show()
+
+
 
 
 

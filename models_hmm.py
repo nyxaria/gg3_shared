@@ -428,3 +428,4 @@ class RampModelHMM:
             return spikes, xs, rates
         else:
             return spikes, xs
+

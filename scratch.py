@@ -18,5 +18,8 @@ import pandas as pd
 from ML_models import StepRampClassifier, compute_summary_statistics
 from models_hmm import RampModelHMM, StepModelHMM
 
-
-w3_2.plot_confusion_matrix('./results/0.25GGML_D24_T3.csv', 'Confusion Matrix (3 Trials), Prelim')
+csv = 'UU_D24_shape1_T30'
+w3_2.plot_confusion_matrix('./results/' + csv + '.csv',
+                           r'Confusion matrix: generating $x_0$ = 0.5, inference $x_0$ = 0.2',
+                           save_name='x_0mismatch',
+                           fig_size_factor=0.8)
