@@ -197,7 +197,7 @@ def plot_confusion_matrix(csv_path, plot_title, save_name='confmat', normalize=T
     conf_matrix[1, 1] = np.sum((y_true == 1) & (y_pred == 1))  # True Positives
 
     if normalize:
-        conf_matrix /= len(y_true)
+        conf_matrix /= len(ramp_predictions)
 
         print(conf_matrix)
 

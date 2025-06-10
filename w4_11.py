@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     # we prob want to do this for n_trials = 5 10 15 20 30 50
 
-    N_TRIALS_LIST = [5, 10, 15, 20, 30, 50]
+    N_TRIALS_LIST = [50]
 
     # BASELINE
 

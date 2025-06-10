@@ -17,9 +17,24 @@ from tqdm import tqdm
 import pandas as pd
 from ML_models import StepRampClassifier, compute_summary_statistics
 from models_hmm import RampModelHMM, StepModelHMM
+N_TRIALS_LIST = [5, 10, 15, 20, 30, 50]
+N_DATASETS=96
 
-csv = 'UU_D24_shape1_T30'
-w3_2.plot_confusion_matrix('./results/' + csv + '.csv',
-                           r'Confusion matrix: generating $x_0$ = 0.5, inference $x_0$ = 0.2',
-                           save_name='x_0mismatch',
+for N_TRIALS in N_TRIALS_LIST:
+    fn = "./results/UU_D" + str(N_DATASETS) + "_shape1_T" + str(N_TRIALS) + ".csv"
+    w3_2.plot_confusion_matrix(fn + '.csv',
+                           r'Confusion matrix, shape = 1, ' + str(N_TRIALS) + ' trials/dataset',
+                           save_name=fn + '.png',
                            fig_size_factor=0.8)
+
+    fn = "./results/UU_D" + str(N_DATASETS) + "_shape3_T" + str(N_TRIALS) + ".csv"
+    w3_2.plot_confusion_matrix(fn + '.csv',
+                               r'Confusion matrix, shape = 3, ' + str(N_TRIALS) + ' trials/dataset',
+                               save_name=fn + '.png',
+                               fig_size_factor=0.8)
+
+    fn = "./results/UU_D" + str(N_DATASETS) + "_shape5_T" + str(N_TRIALS) + ".csv"
+    w3_2.plot_confusion_matrix(fn + '.csv',
+                               r'Confusion matrix, shape = 5, ' + str(N_TRIALS) + ' trials/dataset',
+                               save_name=fn + '.png',
+                               fig_size_factor=0.8)
