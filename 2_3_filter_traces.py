@@ -127,7 +127,8 @@ if __name__ == "__main__":
                loc='lower right', ncol=2, framealpha=0.5)
 
     plt.tight_layout()
-    plt.savefig('./plots/step_filter_traces.png')
+    os.makedirs('plots', exist_ok=True)
+    plt.savefig('./plots/task_2_3_step_filter_traces.png')
 
 
     '''
@@ -212,5 +213,5 @@ if __name__ == "__main__":
                loc='upper left', ncol=2, framealpha=0.5)
 
     plt.tight_layout()
-    plt.savefig('./plots/ramp_filter_traces_highbeta.png')
+    plt.savefig('./plots/task_2_3_ramp_filter_traces_highbeta.png')
 '''

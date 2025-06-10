@@ -82,6 +82,7 @@ def task_3_1_1_visualize_posterior_2d(model_type, true_params, n_trials, param_s
     plt.legend()
     
     filename = f"plots/task_3_1_1_{model_type}_posterior_N{n_trials}.png"
+    plt.tight_layout()
     plt.savefig(filename)
     if show:
         plt.show()
@@ -186,7 +187,8 @@ def task_3_1_1_visualize_map_error(model_type, true_param_specs, inference_param
     plt.ylabel(ylabel)
     plt.title(f'{model_type.capitalize()} Model\nMAP Estimation Error (N_trials={n_trials})')
     
-    filename = f"plots/task_3_1_1_{model_type}_map_error_N{n_trials}.png"
+    filename = f"plots/task_3_1_1_{model_type}_map_error_x{true_param_specs['x0']}_N{n_trials}.png"
+    plt.tight_layout()
     plt.savefig(filename)
     if show:
         plt.show()
@@ -201,12 +203,43 @@ def task_3_1_1_visualize_map_error(model_type, true_param_specs, inference_param
     plt.title(f'{model_type.capitalize()} Model\nPosterior Mean Estimation Error (N_trials={n_trials})')
     
     filename = f"plots/task_3_1_1_{model_type}_expectation_error_N{n_trials}.png"
+    plt.tight_layout()
     plt.savefig(filename)
     if show:
         plt.show()
     plt.close()
 
-def task_3_1_2_analyze_estimation_2d(model_type, true_params, n_trials_list, params_grid, K=50, T=100, Rh=50, show=False):
+def _analyze_estimation_worker(args):
+    model_type, true_params, n_trials, params_grid, param_names, K, T, Rh = args
+
+    if model_type == 'ramp':
+        Model, llh_func = RampModelHMM, w3_utils.ramp_LLH
+    else:  # step
+        Model, llh_func = StepModelHMM, w3_utils.step_LLH
+
+    if model_type == 'ramp':
+        model = Model(beta=true_params['beta'], sigma=true_params['sigma'], x0=true_params['x0'], K=K, Rh=Rh)
+        data, _, _ = model.simulate(Ntrials=n_trials, T=T)
+    else:
+        model = Model(m=true_params['m'], r=true_params['r'], x0=true_params['x0'], Rh=Rh)
+        data, _, _ = model.simulate_exact(Ntrials=n_trials, T=T, delay_compensation=True)
+
+    llh_grid = llh_func(data, params_grid)
+    prior_grid = w3_utils.uniform_prior(params_grid)
+    norm_post_grid = w3_utils.norm_posterior(llh_grid, prior_grid)
+
+    posterior_means = w3_utils.expectation(norm_post_grid, params_grid)
+    posterior_std_devs = w3_utils.posterior_std_dev(norm_post_grid, params_grid, posterior_means)
+
+    errors = {}
+    stds = {}
+    for p in param_names:
+        errors[p] = np.abs(posterior_means[p] - true_params[p])
+        stds[p] = posterior_std_devs.get(p, np.nan)
+
+    return errors, stds
+
+def task_3_1_2_analyze_estimation_2d(model_type, true_params, n_trials_list, params_grid, n_datasets=1, K=50, T=100, Rh=50, show=False):
     if model_type == 'ramp':
         param_names = ['beta', 'sigma']
         Model, llh_func = RampModelHMM, w3_utils.ramp_LLH
@@ -219,7 +252,7 @@ def task_3_1_2_analyze_estimation_2d(model_type, true_params, n_trials_list, par
     true_param_str = "-".join([f"{k}_{v:.2f}" for k, v in sorted(true_params.items()) if k in param_names + ['x0']])
     grid_shape_str = "_".join(map(str, params_grid.shape))
     ntrials_str = "_".join(map(str, n_trials_list))
-    cache_filename = os.path.join(cache_dir, f"analyze_2d_{model_type}_{true_param_str}_G{grid_shape_str}_N{ntrials_str}_K{K}.pickle")
+    cache_filename = os.path.join(cache_dir, f"analyze_2d_{model_type}_{true_param_str}_G{grid_shape_str}_N{ntrials_str}_D{n_datasets}_K{K}.pickle")
 
     if os.path.exists(cache_filename):
         with open(cache_filename, 'rb') as f:
@@ -230,24 +263,23 @@ def task_3_1_2_analyze_estimation_2d(model_type, true_params, n_trials_list, par
         posterior_stds = {p: [] for p in param_names}
     
         for n_trials in n_trials_list:
-            if model_type == 'ramp':
-                model = Model(beta=true_params['beta'], sigma=true_params['sigma'], x0=true_params['x0'], K=K, Rh=Rh)
-                data, _, _ = model.simulate(Ntrials=n_trials, T=T)
-            else:
-                model = Model(m=true_params['m'], r=true_params['r'], x0=true_params['x0'], Rh=Rh)
-                data, _, _ = model.simulate_exact(Ntrials=n_trials, T=T, delay_compensation=True)
+            print(f"Processing n_trials = {n_trials}")
+            tasks = [(model_type, true_params, n_trials, params_grid, param_names, K, T, Rh) for _ in range(n_datasets)]
             
-            llh_grid = llh_func(data, params_grid)
-            prior_grid = w3_utils.uniform_prior(params_grid)
-            norm_post_grid = w3_utils.norm_posterior(llh_grid, prior_grid)
-            
-            posterior_means = w3_utils.expectation(norm_post_grid, params_grid)
-            posterior_std_devs = w3_utils.posterior_std_dev(norm_post_grid, params_grid, posterior_means)
+            with concurrent.futures.ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
+                results = list(tqdm(executor.map(_analyze_estimation_worker, tasks), total=len(tasks), desc=f"Averaging over datasets"))
 
+            errors_for_n_trials = {p: [] for p in param_names}
+            stds_for_n_trials = {p: [] for p in param_names}
+
+            for errors, stds in results:
+                for p in param_names:
+                    errors_for_n_trials[p].append(errors[p])
+                    stds_for_n_trials[p].append(stds[p])
+            
             for p in param_names:
-                error = np.abs(posterior_means[p] - true_params[p])
-                estimation_errors[p].append(error)
-                posterior_stds[p].append(posterior_std_devs.get(p, np.nan))
+                estimation_errors[p].append(np.mean(errors_for_n_trials[p]))
+                posterior_stds[p].append(np.mean(stds_for_n_trials[p]))
         
         with open(cache_filename, 'wb') as f:
             pickle.dump((estimation_errors, posterior_stds), f)
@@ -264,9 +296,10 @@ def task_3_1_2_analyze_estimation_2d(model_type, true_params, n_trials_list, par
         plt.legend()
         plt.xscale('log')
         plt.yscale('log')
-    plt.suptitle(f'{model_type.capitalize()} Model\nEstimation Quality vs. Number of Trials')
-    filepath = f"plots/task_3_1_2_{model_type}_error_vs_ntrials.png"
+    plt.suptitle(f'{model_type.capitalize()} Model\nEstimation Quality vs. Number of Trials (N Datasets={n_datasets})')
+    filepath = f"plots/task_3_1_2_{model_type}_x{true_params['x0']}_ND{n_datasets}_Nerror_vs_ntrials.png"
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    plt.tight_layout()
     plt.savefig(filepath, dpi=300, bbox_inches='tight')
     if show:
         plt.show()
@@ -332,12 +365,13 @@ def task_3_1_3_visualize_posterior_marginal(model_type, true_params, n_trials, p
     fig.suptitle(f'{model_type.capitalize()} Model\n2D Marginal Posteriors (N_trials={n_trials})', fontsize=16)
     filepath = f"plots/task_3_1_3_{model_type}_marginals_N{n_trials}.png"
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    fig.tight_layout()
     plt.savefig(filepath, dpi=300, bbox_inches='tight')
     if show:
         plt.show()
     plt.close()
 
-def task_3_1_3_analyze_estimation_3d(model_type, true_params, n_trials_list, params_grid, K=50, T=100, Rh=50, show=False):
+def task_3_1_3_analyze_estimation_3d(model_type, true_params, n_trials_list, params_grid, n_datasets=1, K=50, T=100, Rh=50, show=False):
     if model_type == 'ramp':
         param_names = ['beta', 'sigma', 'x0']
         Model, llh_func = RampModelHMM, w3_utils.ramp_LLH
@@ -350,7 +384,7 @@ def task_3_1_3_analyze_estimation_3d(model_type, true_params, n_trials_list, par
     true_param_str = "-".join([f"{k}_{v:.2f}" for k, v in sorted(true_params.items()) if k in param_names])
     grid_shape_str = "_".join(map(str, params_grid.shape))
     ntrials_str = "_".join(map(str, n_trials_list))
-    cache_filename = os.path.join(cache_dir, f"analyze_3d_{model_type}_{true_param_str}_G{grid_shape_str}_N{ntrials_str}_K{K}.pickle")
+    cache_filename = os.path.join(cache_dir, f"analyze_3d_{model_type}_{true_param_str}_G{grid_shape_str}_N{ntrials_str}_D{n_datasets}_K{K}.pickle")
 
     if os.path.exists(cache_filename):
         with open(cache_filename, 'rb') as f:
@@ -361,24 +395,23 @@ def task_3_1_3_analyze_estimation_3d(model_type, true_params, n_trials_list, par
         posterior_stds = {p: [] for p in param_names}
 
         for n_trials in n_trials_list:
-            if model_type == 'ramp':
-                model = Model(beta=true_params['beta'], sigma=true_params['sigma'], x0=true_params['x0'], K=K, Rh=Rh)
-                data, _, _ = model.simulate(Ntrials=n_trials, T=T)
-            else:
-                model = Model(m=true_params['m'], r=true_params['r'], x0=true_params['x0'], Rh=Rh)
-                data, _, _ = model.simulate_exact(Ntrials=n_trials, T=T, delay_compensation=True)
+            print(f"Processing 3D n_trials = {n_trials}")
+            tasks = [(model_type, true_params, n_trials, params_grid, param_names, K, T, Rh) for _ in range(n_datasets)]
+
+            with concurrent.futures.ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
+                results = list(tqdm(executor.map(_analyze_estimation_worker, tasks), total=len(tasks), desc=f"Averaging over datasets"))
             
-            llh_grid = llh_func(data, params_grid)
-            prior_grid = w3_utils.uniform_prior(params_grid)
-            norm_post_grid = w3_utils.norm_posterior(llh_grid, prior_grid)
-            
-            posterior_means = w3_utils.expectation(norm_post_grid, params_grid)
-            posterior_std_devs = w3_utils.posterior_std_dev(norm_post_grid, params_grid, posterior_means)
+            errors_for_n_trials = {p: [] for p in param_names}
+            stds_for_n_trials = {p: [] for p in param_names}
+
+            for errors, stds in results:
+                for p in param_names:
+                    errors_for_n_trials[p].append(errors[p])
+                    stds_for_n_trials[p].append(stds[p])
 
             for p in param_names:
-                error = np.abs(posterior_means[p] - true_params[p])
-                estimation_errors[p].append(error)
-                posterior_stds[p].append(posterior_std_devs.get(p, np.nan))
+                estimation_errors[p].append(np.mean(errors_for_n_trials[p]))
+                posterior_stds[p].append(np.mean(stds_for_n_trials[p]))
 
         with open(cache_filename, 'wb') as f:
             pickle.dump((estimation_errors, posterior_stds), f)
@@ -394,9 +427,10 @@ def task_3_1_3_analyze_estimation_3d(model_type, true_params, n_trials_list, par
         plt.title(f'Parameter: {p}')
         plt.legend()
         plt.xscale('log')
-    plt.suptitle(f'{model_type.capitalize()} Model\nEstimation Quality vs. Number of Trials (3D)')
-    filepath = f"plots/task_3_1_3_{model_type}_error_vs_ntrials.png"
+    plt.suptitle(f'{model_type.capitalize()} Model\nEstimation Quality vs. Number of Trials (3D, N Datasets={n_datasets})')
+    filepath = f"plots/task_3_1_3_{model_type}_error_vs_ntrials_ND{n_datasets}.png"
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    plt.tight_layout()
     plt.savefig(filepath, dpi=300, bbox_inches='tight')
     if show:
         plt.show()
@@ -411,7 +445,9 @@ if __name__ == "__main__":
     T_MS = 100
     RH = 50
 
+    map_x0 = 0.0
     N_MAP_TRIALS = 400
+    N_DATASETS_AVG = 30
 
     M_2D_GRID = 31
     M_TRUE_GRID = 11
@@ -436,8 +472,8 @@ if __name__ == "__main__":
     #
 
     print("\n--- RAMP MODEL ANALYSIS ---")
-    ramp_true_params = {'beta': 1.0, 'sigma': 0.2, 'x0': 0.2}
-    
+    ramp_true_params = {'beta': ramp_param_2d['beta'][M_2D_GRID//3], 'sigma': ramp_param_2d['sigma'][3], 'x0': 0.2}
+    print(f"Ramp True params: {ramp_true_params}")
     # 3.1.1
     
     ramp_params_grid_2d = w3_utils.make_params_grid(ramp_param_2d)
@@ -450,13 +486,13 @@ if __name__ == "__main__":
     ramp_true_param_specs = OD([
         ('beta', np.linspace(0, 4, M_TRUE_GRID)),
         ('sigma', np.linspace(0.04, 4, M_TRUE_GRID)),
-        ('x0', 0.0),
+        ('x0', map_x0),
         ('K', K), ('T', T_MS), ('Rh', RH)
     ])
     ramp_inference_param_specs = OD([
         ('beta', np.linspace(0, 4, M_INFERENCE_GRID)),
         ('sigma', np.linspace(0.04, 4, M_INFERENCE_GRID)),
-        ('x0', 0.0),
+        ('x0', map_x0),
         ('K', K), ('T', T_MS), ('Rh', RH)
     ])
     task_3_1_1_visualize_map_error('ramp', ramp_true_param_specs, ramp_inference_param_specs, n_trials=N_MAP_TRIALS, K=K, T=T_MS, Rh=RH, show=args.show)
@@ -464,7 +500,7 @@ if __name__ == "__main__":
     # 3.1.2
     n_trials_list = [1, 5, 10, 20, 50, 100, 200, 400]
     ramp_params_grid_2d = w3_utils.make_params_grid(ramp_inference_param_specs)
-    task_3_1_2_analyze_estimation_2d('ramp', ramp_true_params, n_trials_list, ramp_params_grid_2d, K=K, T=T_MS, Rh=RH, show=args.show)
+    task_3_1_2_analyze_estimation_2d('ramp', ramp_true_params, n_trials_list, ramp_params_grid_2d, n_datasets=N_DATASETS_AVG, K=K, T=T_MS, Rh=RH, show=args.show)
     
     # 3.1.3
     ramp_params_specs_3d = OD([
@@ -474,7 +510,7 @@ if __name__ == "__main__":
         ('K', K), ('T', T_MS), ('Rh', RH)
     ])
     ramp_params_grid_3d = w3_utils.make_params_grid(ramp_params_specs_3d)
-    task_3_1_3_visualize_posterior_marginal('ramp', ramp_true_params, n_trials=100, param_specs=ramp_params_specs_3d, params_grid=ramp_params_grid_3d, K=K, T=T_MS, Rh=RH, show=args.show)
+    # task_3_1_3_visualize_posterior_marginal('ramp', ramp_true_params, n_trials=100, param_specs=ramp_params_specs_3d, params_grid=ramp_params_grid_3d, K=K, T=T_MS, Rh=RH, show=args.show)
     
     ramp_params_specs_3d = OD([
         ('beta', np.linspace(0, 4, M_TRUE_GRID)),
@@ -483,15 +519,15 @@ if __name__ == "__main__":
         ('K', K), ('T', T_MS), ('Rh', RH)
     ])
     ramp_params_grid_3d = w3_utils.make_params_grid(ramp_params_specs_3d)
-    task_3_1_3_analyze_estimation_3d('ramp', ramp_true_params, n_trials_list=[50, 100, 200], params_grid=ramp_params_grid_3d, K=K, T=T_MS, Rh=RH, show=args.show)
+    # task_3_1_3_analyze_estimation_3d('ramp', ramp_true_params, n_trials_list=[50, 100, 200], params_grid=ramp_params_grid_3d, n_datasets=N_DATASETS_AVG, K=K, T=T_MS, Rh=RH, show=args.show)
 
     #
     # STEP
     #
 
     print("\n--- STEP MODEL ANALYSIS ---")
-    step_true_params = {'m': 50, 'r': 2, 'x0': 0.2}
-    
+    step_true_params = {'m': step_param_2d['m'][M_2D_GRID//2], 'r': step_param_2d['r'][2], 'x0': 0.2}
+    print(f"Step True params: {step_true_params}")
     # 3.1.1
     
     step_params_grid_2d = w3_utils.make_params_grid(step_param_2d)
@@ -504,21 +540,21 @@ if __name__ == "__main__":
     step_true_param_specs = OD([
         ('m', np.linspace(0, T_MS*3/4, M_TRUE_GRID)),
         ('r', np.linspace(1, 6, 6).astype(int)),
-        ('x0', 0.2),
+        ('x0', map_x0),
         ('K', K), ('T', T_MS), ('Rh', RH)
     ])
     step_inference_param_specs = OD([
         ('m', np.linspace(0, T_MS*3/4, M_INFERENCE_GRID)),
         ('r', np.linspace(1, 6, 6).astype(int)),
-        ('x0', 0.2),
+        ('x0', map_x0),
         ('K', K), ('T', T_MS), ('Rh', RH)
     ])
     task_3_1_1_visualize_map_error('step', step_true_param_specs, step_inference_param_specs, n_trials=N_MAP_TRIALS, K=K, T=T_MS, Rh=RH, show=args.show)
 
     # 3.1.2
-    n_trials_list = [1, 5, 10, 20, 50, 100, 200]
+    n_trials_list = [1, 5, 10, 20, 50, 100, 200, 400]
     step_params_grid_2d = w3_utils.make_params_grid(step_inference_param_specs)
-    task_3_1_2_analyze_estimation_2d('step', step_true_params, n_trials_list, step_params_grid_2d, K=K, T=T_MS, Rh=RH, show=args.show)
+    task_3_1_2_analyze_estimation_2d('step', step_true_params, n_trials_list, step_params_grid_2d, n_datasets=N_DATASETS_AVG, K=K, T=T_MS, Rh=RH, show=args.show)
 
     # 3.1.3
     step_params_specs_3d = OD([
@@ -528,7 +564,7 @@ if __name__ == "__main__":
         ('K', K), ('T', T_MS), ('Rh', RH)
     ])
     step_params_grid_3d = w3_utils.make_params_grid(step_params_specs_3d)
-    task_3_1_3_visualize_posterior_marginal('step', step_true_params, n_trials=100, param_specs=step_params_specs_3d, params_grid=step_params_grid_3d, K=K, T=T_MS, Rh=RH, show=args.show)
+    # task_3_1_3_visualize_posterior_marginal('step', step_true_params, n_trials=100, param_specs=step_params_specs_3d, params_grid=step_params_grid_3d, K=K, T=T_MS, Rh=RH, show=args.show)
     
     step_params_specs_3d = OD([
         ('m', np.linspace(0, T_MS*3/4, M_TRUE_GRID)),
@@ -537,4 +573,4 @@ if __name__ == "__main__":
         ('K', K), ('T', T_MS), ('Rh', RH)
     ])
     step_params_grid_3d = w3_utils.make_params_grid(step_params_specs_3d)
-    task_3_1_3_analyze_estimation_3d('step', step_true_params, n_trials_list=[50, 100, 200], params_grid=step_params_grid_3d, K=K, T=T_MS, Rh=RH, show=args.show)
+    # task_3_1_3_analyze_estimation_3d('step', step_true_params, n_trials_list=[50, 100, 200], params_grid=step_params_grid_3d, n_datasets=N_DATASETS_AVG, K=K, T=T_MS, Rh=RH, show=args.show)

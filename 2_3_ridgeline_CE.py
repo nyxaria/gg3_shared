@@ -100,7 +100,8 @@ if __name__ == "__main__":
     ax.yaxis.set_visible(True)
     ax.yaxis.set_ticks([])
 
-    plt.savefig('./plots/ridgeline_15r.png') # TODO changeme
+    os.makedirs('plots', exist_ok=True)
+    plt.savefig('./plots/task_2_3_ridgeline_15r.png') # TODO changeme
 
     '''
     # Ramp version
@@ -178,4 +179,4 @@ if __name__ == "__main__":
 
 
 
-    plt.savefig('./plots/ridgeline_15b.png')'''
+    plt.savefig('./plots/task_2_3_ridgeline_15b.png')'''

@@ -83,6 +83,8 @@ if __name__ == "__main__":
     iv2_flat = iv2_grid.flatten()
     CE_flat = CE_mat.flatten()
 
+    os.makedirs('plots', exist_ok=True)
+
 
     plt.figure(figsize=(8, 6))
     contour = plt.tricontourf(iv1_flat, iv2_flat, CE_flat, levels=20, cmap='viridis')
@@ -90,7 +92,9 @@ if __name__ == "__main__":
     plt.xlabel('x0') # TODO
     plt.ylabel('Rh') # TODO
     plt.title(r'Step model - BCE for varying $x_0, Rh$') # TODO
+    plt.savefig('plots/task_2_3_ramp_contours_contour.png')
     plt.show()
 
     plt.matshow(CE_mat)
+    plt.savefig('plots/task_2_3_ramp_contours_matshow.png')
     plt.show()

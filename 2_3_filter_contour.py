@@ -91,7 +91,10 @@ if __name__ == "__main__":
     ivar2_flat = ivar2_grid.flatten()
     CE_diff_flat = CE_diff.flatten()
 
+    os.makedirs('plots', exist_ok=True)
+
     plt.matshow(CE_diff)
+    plt.savefig('plots/task_2_3_filter_contour_matshow.png')
     plt.show()
 
     plt.figure(figsize=(8, 6))
@@ -100,4 +103,5 @@ if __name__ == "__main__":
     plt.xlabel('x0')
     plt.ylabel('sigma')
     plt.title(r'Ramp: $CE_{smoothed} - CE_{filtered}$ for varying $x_0, sigma$')
+    plt.savefig('plots/task_2_3_filter_contour_contour.png')
     plt.show()
