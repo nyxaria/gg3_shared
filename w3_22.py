@@ -161,7 +161,7 @@ if __name__ == "__main__":
     for label, accs in accuracies.items():
         plt.plot(N_TRIALS_LIST, accs, marker='o', linestyle='-', label=label)
     
-    plt.xlabel("Number of Trials (N_TRIALS)")
+    plt.xlabel("Number of Trials")
     plt.ylabel("Overall HMM Accuracy")
     plt.title("HMM Accuracy vs. Number of Trials for Different Priors")
     plt.legend()
