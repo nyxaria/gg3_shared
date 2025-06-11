@@ -225,11 +225,11 @@ def _analyze_estimation_worker(args):
         data, _, _ = model.simulate_exact(Ntrials=n_trials, T=T, delay_compensation=True)
 
     llh_grid = llh_func(data, params_grid)
-    prior_grid = w3_utils.uniform_prior(params_grid)
-    norm_post_grid = w3_utils.norm_posterior(llh_grid, prior_grid)
+    prior_grid = w3_utils.uniform_prior(params_grid, log=True)
+    norm_post_grid = w3_utils.norm_posterior(llh_grid, prior_grid, log=True)
 
-    posterior_means = w3_utils.expectation(norm_post_grid, params_grid)
-    posterior_std_devs = w3_utils.posterior_std_dev(norm_post_grid, params_grid, posterior_means)
+    posterior_means = w3_utils.expectation(norm_post_grid, params_grid, log=True)
+    posterior_std_devs = w3_utils.posterior_std_dev(norm_post_grid, params_grid, posterior_means, log=True)
 
     errors = {}
     stds = {}
@@ -334,8 +334,8 @@ def task_3_1_3_visualize_posterior_marginal(model_type, true_params, n_trials, p
             data, _, _ = model.simulate_exact(Ntrials=n_trials, T=T, delay_compensation=True)
 
         llh_grid = llh_func(data, params_grid)
-        prior_grid = w3_utils.uniform_prior(params_grid)
-        norm_post_grid = w3_utils.norm_posterior(llh_grid, prior_grid)
+        prior_grid = w3_utils.uniform_prior(params_grid, log=True)
+        norm_post_grid = w3_utils.norm_posterior(llh_grid, prior_grid, log=True)
         with open(cache_filename, 'wb') as f:
             pickle.dump(norm_post_grid, f)
         print(f"Saved to cache: {cache_filename}")
