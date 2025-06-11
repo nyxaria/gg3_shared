@@ -149,7 +149,7 @@ if __name__ == "__main__":
     for trial in range(trials):
         ex, fex, expected_s, fexpected_s, states = task_2_3.ramp_HMM_inference({
             'T': T,
-            'beta': 0.5,
+            'beta': 1.,
             'sigma': 0.35,
             'Rh': 50,
         }, test_filtering=True)

@@ -182,10 +182,11 @@ def plot_heatmap(results_df, title='Untitled Heatmap', interp_method='linear', s
 
     if save_name:
         plt.savefig(save_name)
-    plt.show()
+    if show:
+        plt.show()
 
 
-def plot_confusion_matrix(csv_path, plot_title, save_name='confmat', normalize=True, fig_size_factor=0.7):
+def plot_confusion_matrix(csv_path, plot_title, save_name='confmat', normalize=True, fig_size_factor=0.7, show=True):
     """
     Plot confusion matrix from results CSV and return accuracy.
 
@@ -227,8 +228,9 @@ def plot_confusion_matrix(csv_path, plot_title, save_name='confmat', normalize=T
     plt.xlabel('Predicted Label')
     plt.ylabel('True Label')
     plt.tight_layout()
-    plt.savefig(save_name + '.png')
-    plt.show()
+    plt.savefig(save_name)
+    if show:
+        plt.show()
 
     accuracy = (conf_matrix[0, 0] + conf_matrix[1, 1]) / np.sum(conf_matrix)
     print(f'Overall HMM Accuracy: {accuracy:.2%}')

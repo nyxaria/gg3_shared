@@ -13,6 +13,16 @@ import matplotlib.cm as cm
 
 import task_2_3
 
+plt.rcParams.update({
+    'font.size': 14,
+    'axes.titlesize': 16,
+    'axes.labelsize': 14,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 12,
+    'figure.titlesize': 18
+})
+
 np.set_printoptions(legacy='1.25')  # don't show np.float; helps with debug
 
 if __name__ == "__main__":
@@ -103,7 +113,7 @@ if __name__ == "__main__":
     os.makedirs('plots', exist_ok=True)
     plt.savefig('./plots/task_2_3_ridgeline_15r.png') # TODO changeme
 
-    '''
+    
     # Ramp version
     
     num_trials = 15
@@ -179,4 +189,4 @@ if __name__ == "__main__":
 
 
 
-    plt.savefig('./plots/task_2_3_ridgeline_15b.png')'''
+    plt.savefig('./plots/task_2_3_ridgeline_15b.png')
