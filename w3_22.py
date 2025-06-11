@@ -7,6 +7,7 @@ from scipy.interpolate import griddata
 import w3_2
 import w3_utils
 from models_hmm import RampModelHMM
+import pandas as pd
 
 
 var = lambda a, b, frac: ((b-a) * frac) ** 2
@@ -26,12 +27,14 @@ def run_and_plot_selection(filename, ramp_grid, step_grid, gen_ramp_post, gen_st
     else:
         print(f"Found existing results file: {filename}")
 
+
     heatmap_savename = f'plots/task_3_2_2_{os.path.basename(filename)[:-4]}_heatmap.png'
     confmat_savename = f'plots/task_3_2_2_{os.path.basename(filename)[:-4]}_confmat.png'
     plot_title = f'{plot_title_prefix}, {n_trials} trials/dataset, Rh={Rh}, x0={x0}'
     
-    w3_2.plot_heatmap(fn, plot_title, save_name=heatmap_savename, show=False)
-    w3_2.plot_confusion_matrix(fn, plot_title, save_name=confmat_savename, show=False)
+    w3_2.plot_heatmap(filename, plot_title, save_name=heatmap_savename, show=False)
+    ramp_accuracy, step_accuracy = w3_2.plot_confusion_matrix(filename, plot_title, save_name=confmat_savename, show=False)
+    return ramp_accuracy, step_accuracy
 
 
 if __name__ == "__main__":
@@ -80,9 +83,12 @@ if __name__ == "__main__":
 
 
 
-    N_DATASETS = 10
+    N_DATASETS = 50
     N_TRIALS_LIST = [5, 10, 15, 20, 30, 50]
     sigma_fract_list = [0.125, 0.25, 0.5]
+    accuracies = {'Uniform': []}
+    for sf in sigma_fract_list:
+        accuracies[f'Gaussian, SF={sf}'] = []
 
     for N_TRIALS in N_TRIALS_LIST:
         print("--------------------------------")
@@ -91,7 +97,7 @@ if __name__ == "__main__":
         # TEST 1
 
         fn = "./results/UU_D" + str(N_DATASETS) + "_T" + str(N_TRIALS) + ".csv"
-        run_and_plot_selection(
+        ramp_accuracy, step_accuracy = run_and_plot_selection(
             filename=fn,
             ramp_grid=ramp_params_grid,
             step_grid=step_params_grid,
@@ -105,6 +111,7 @@ if __name__ == "__main__":
             Rh=RH,
             x0=X0
         )
+        accuracies['Uniform'].append((ramp_accuracy+step_accuracy)/2)
 
         # TEST 2
 
@@ -134,7 +141,7 @@ if __name__ == "__main__":
 
             fn = "./results/GU_D" + str(N_DATASETS) + "_T" + str(N_TRIALS) + "_SF" + str(STD_FRACTION) + ".csv"
 
-            run_and_plot_selection(
+            ramp_accuracy, step_accuracy = run_and_plot_selection(
                 filename=fn,
                 ramp_grid=ramp_params_grid,
                 step_grid=step_params_grid,
@@ -144,7 +151,21 @@ if __name__ == "__main__":
                 inf_step_post=gauss_step_posterior,
                 n_datasets=N_DATASETS,
                 n_trials=N_TRIALS,
-                plot_title_prefix=r'Gaussian prior, $\sigma_{frac}=0.5$',
+                plot_title_prefix=r'Gaussian prior, $\sigma_{frac}$=' + str(STD_FRACTION),
                 Rh=RH,
                 x0=X0
             )
+            accuracies[f'Gaussian, SF={STD_FRACTION}'].append((ramp_accuracy+step_accuracy)/2)
+
+    plt.figure(figsize=(10, 6))
+    for label, accs in accuracies.items():
+        plt.plot(N_TRIALS_LIST, accs, marker='o', linestyle='-', label=label)
+    
+    plt.xlabel("Number of Trials (N_TRIALS)")
+    plt.ylabel("Overall HMM Accuracy")
+    plt.title("HMM Accuracy vs. Number of Trials for Different Priors")
+    plt.legend()
+    plt.grid(True)
+    plt.ylim(0.45, 1.05)
+    plt.savefig('plots/task_3_2_2_accuracy_vs_n_trials.png')
+    plt.show()
