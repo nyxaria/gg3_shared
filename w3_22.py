@@ -12,8 +12,31 @@ from models_hmm import RampModelHMM
 var = lambda a, b, frac: ((b-a) * frac) ** 2
 mean = lambda a, b: (b+a)/2
 
+def run_and_plot_selection(filename, ramp_grid, step_grid, gen_ramp_post, gen_step_post, inf_ramp_post, inf_step_post, n_datasets, n_trials, plot_title_prefix, Rh, x0):
+    
+    if not os.path.exists(filename):
+        print(f"Running model selection, saving to {filename}...")
+        w3_2.model_selection(
+            ramp_grid, step_grid,
+            gen_ramp_post, gen_step_post, # generating
+            inf_ramp_post, inf_step_post, # inference
+            N_DATASETS=n_datasets, N_TRIALS=n_trials,
+            save_to=filename
+        )
+    else:
+        print(f"Found existing results file: {filename}")
+
+    heatmap_savename = f'plots/task_3_2_2_{os.path.basename(filename)[:-4]}_heatmap.png'
+    confmat_savename = f'plots/task_3_2_2_{os.path.basename(filename)[:-4]}_confmat.png'
+    plot_title = f'{plot_title_prefix}, {n_trials} trials/dataset, Rh={Rh}, x0={x0}'
+    
+    w3_2.plot_heatmap(fn, plot_title, save_name=heatmap_savename)
+    w3_2.plot_confusion_matrix(fn, plot_title, save_name=confmat_savename)
+
+
 if __name__ == "__main__":
     os.makedirs('plots', exist_ok=True)
+    os.makedirs('results', exist_ok=True)
     K = 25
     T_MS = 100
     RH = 20
@@ -42,12 +65,12 @@ if __name__ == "__main__":
         ('Rh', RH)
     ])
 
-    step_param_specs = OD([('m', list(M_RANGE) + [M_GRID]),
-                ('r', list(R_RANGE) + [6]),
-                ('x0', X0),
-                ('K', K),
-                ('T', T_MS),
-                ('Rh', RH)])
+    step_param_specs = OD([('m', np.linspace(*M_RANGE, M_GRID)),
+                           ('r', np.linspace(*R_RANGE, 6).astype(int)),
+                           ('x0', X0),
+                           ('K', K),
+                           ('T', T_MS),
+                           ('Rh', RH)])
 
     ramp_params_grid = w3_utils.make_params_grid(ramp_param_specs)
     step_params_grid = w3_utils.make_params_grid(step_param_specs)
@@ -64,19 +87,20 @@ if __name__ == "__main__":
     # TEST 1
 
     fn = "./results/UU_D" + str(N_DATASETS) + "_T" + str(N_TRIALS) + ".csv"
-
-    w3_2.model_selection(
-        ramp_params_grid, step_params_grid,
-        uniform_ramp_posterior, uniform_step_posterior, # generating
-        uniform_ramp_posterior, uniform_step_posterior, # inference
-        N_DATASETS=N_DATASETS, N_TRIALS=N_TRIALS,
-        # format: generating: G/U; inference: G/U; n. datasets, n. trials
-        # if G, append std_fraction on front
-        save_to=os.path.join(os.getcwd(), fn)
+    run_and_plot_selection(
+        filename=fn,
+        ramp_grid=ramp_params_grid,
+        step_grid=step_params_grid,
+        gen_ramp_post=uniform_ramp_posterior,
+        gen_step_post=uniform_step_posterior,
+        inf_ramp_post=uniform_ramp_posterior,
+        inf_step_post=uniform_step_posterior,
+        n_datasets=N_DATASETS,
+        n_trials=N_TRIALS,
+        plot_title_prefix='Uniform prior',
+        Rh=RH,
+        x0=X0
     )
-
-    w3_2.plot_heatmap(fn, 'Uniform prior, ' + str(N_TRIALS) + ' trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_heatmap.png')
-    w3_2.plot_confusion_matrix(fn, 'Uniform prior, ' + str(N_TRIALS) + ' trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_confmat.png')
 
     # TEST 2
 
@@ -106,19 +130,20 @@ if __name__ == "__main__":
 
     fn = "./results/0.5GU_D" + str(N_DATASETS) + "_T" + str(N_TRIALS) + ".csv"
 
-    w3_2.model_selection(
-        ramp_params_grid, step_params_grid,
-        uniform_ramp_posterior, uniform_step_posterior,  # generating
-        gauss_ramp_posterior, gauss_step_posterior,  # inference
-        N_DATASETS=N_DATASETS, N_TRIALS=N_TRIALS,
-        # format: generating: G/U; inference: G/U; n. datasets, n. trials
-        # if G, append std_fraction on front
-        save_to=os.path.join(os.getcwd(), fn)
+    run_and_plot_selection(
+        filename=fn,
+        ramp_grid=ramp_params_grid,
+        step_grid=step_params_grid,
+        gen_ramp_post=uniform_ramp_posterior,
+        gen_step_post=uniform_step_posterior,
+        inf_ramp_post=gauss_ramp_posterior,
+        inf_step_post=gauss_step_posterior,
+        n_datasets=N_DATASETS,
+        n_trials=N_TRIALS,
+        plot_title_prefix=r'Gaussian prior, $\sigma_{frac}=0.5$',
+        Rh=RH,
+        x0=X0
     )
-
-    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.5$, ' + str(N_TRIALS) + ' trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_heatmap.png')
-    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.5$, ' + str(N_TRIALS) + ' trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_confmat.png')
-
 
 
     # TEST 3
@@ -149,19 +174,20 @@ if __name__ == "__main__":
 
     fn = "./results/0.25GU_D" + str(N_DATASETS) + "_T" + str(N_TRIALS) + ".csv"
 
-    w3_2.model_selection(
-        ramp_params_grid, step_params_grid,
-        uniform_ramp_posterior, uniform_step_posterior,  # generating
-        gauss_ramp_posterior, gauss_step_posterior,  # inference
-        N_DATASETS=N_DATASETS, N_TRIALS=N_TRIALS,
-        # format: generating: G/U; inference: G/U; n. datasets, n. trials
-        # if G, append std_fraction on front
-        save_to=os.path.join(os.getcwd(), fn)
+    run_and_plot_selection(
+        filename=fn,
+        ramp_grid=ramp_params_grid,
+        step_grid=step_params_grid,
+        gen_ramp_post=uniform_ramp_posterior,
+        gen_step_post=uniform_step_posterior,
+        inf_ramp_post=gauss_ramp_posterior,
+        inf_step_post=gauss_step_posterior,
+        n_datasets=N_DATASETS,
+        n_trials=N_TRIALS,
+        plot_title_prefix=r'Gaussian prior, $\sigma_{frac}=0.25$',
+        Rh=RH,
+        x0=X0
     )
-
-    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_heatmap.png')
-    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.25$, 3 trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_confmat.png')
-
 
 
     # TEST 4
@@ -191,16 +217,18 @@ if __name__ == "__main__":
         })
 
     fn = "./results/0.125GU_D" + str(N_DATASETS) + "_T" + str(N_TRIALS) + ".csv"
-
-    w3_2.model_selection(
-        ramp_params_grid, step_params_grid,
-        uniform_ramp_posterior, uniform_step_posterior,  # generating
-        gauss_ramp_posterior, gauss_step_posterior,  # inference
-        N_DATASETS=N_DATASETS, N_TRIALS=N_TRIALS,
-        # format: generating: G/U; inference: G/U; n. datasets, n. trials
-        # if G, append std_fraction on front
-        save_to=os.path.join(os.getcwd(), fn)
+    
+    run_and_plot_selection(
+        filename=fn,
+        ramp_grid=ramp_params_grid,
+        step_grid=step_params_grid,
+        gen_ramp_post=uniform_ramp_posterior,
+        gen_step_post=uniform_step_posterior,
+        inf_ramp_post=gauss_ramp_posterior,
+        inf_step_post=gauss_step_posterior,
+        n_datasets=N_DATASETS,
+        n_trials=N_TRIALS,
+        plot_title_prefix=r'Gaussian prior, $\sigma_{frac}=0.125$',
+        Rh=RH,
+        x0=X0
     )
-
-    w3_2.plot_heatmap(fn, r'Gaussian prior, $\sigma_{frac}=0.125$, 3 trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_heatmap.png')
-    w3_2.plot_confusion_matrix(fn, r'Gaussian prior, $\sigma_{frac}=0.125$, 3 trials/dataset, Rh=20, x0=0.5', save_name=f'plots/task_3_2_2_{os.path.basename(fn)[:-4]}_confmat.png')
