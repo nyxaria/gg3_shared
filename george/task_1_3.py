@@ -27,13 +27,13 @@ else:
 
 T_DURATION_MS = 1000
 FANO_BIN_WIDTH_MS = 50
-N_TRIALS_FANO = 5000
+N_TRIALS_FANO = 50000
 
 def analyze_fano_factors(params, label, show_plot):
 
     model_type = 'ramp' if all('beta' in p for p in params) else ('step' if all('m' in p for p in params) else 'mixed')
 
-    plt.figure(figsize=(12, 7))
+    plt.figure(figsize=(12 * 0.8, 7 * 0.8))
     for params in params:
         if 'beta' in params:
             model = models.RampModel(beta=params['beta'], sigma=params['sigma'])
@@ -196,6 +196,8 @@ def plot_fano_factor_for_step_model_trials(m_param, r_param, trial_counts, T_dur
     plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
     print(f"Saved Fano factor plot to {plot_filename}")
 
+    plt.tight_layout()
+
     if show_plot:
         plt.show()
     else:
@@ -237,9 +239,9 @@ if __name__ == "__main__":
             {'beta': 0.5, 'sigma': 0.8}
         ],
         "ramp_beta": [
+            {'beta': 0, 'sigma': 0.2},
             {'beta': 0.5, 'sigma': 0.2},
-            {'beta': 10, 'sigma': 0.2},
-            {'beta': 50, 'sigma': 0.2}
+            {'beta': 2, 'sigma': 0.2}
         ],
         "step_r": [
             {'m': T_DURATION_MS / 2, 'r': 0.1},

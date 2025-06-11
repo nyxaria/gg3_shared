@@ -88,7 +88,7 @@ def _model_selection_worker_with_14(args):
             ramp_outputs = np.clip(ramp_outputs, epsilon, 1 - epsilon)
             LLR_ramp = np.sum(np.log(ramp_outputs)) - np.sum(np.log(1 - ramp_outputs))
 
-            print('STEP', LLR_step, 'RAMP', LLR_ramp)
+            # print('STEP', LLR_step, 'RAMP', LLR_ramp)
 
     return {
         'beta': ramp_params['beta'],
@@ -159,6 +159,7 @@ def model_selection_with_14(ramp_params_grid, step_params_grid, gen_ramp, gen_st
                     N_TRIALS, ramp_gamma_shape, step_gamma_shape, N_TRIALS, model, scaler) for _ in range(N_DATASETS)]
 
     # pool_results = [_model_selection_worker_with_14(worker_args[0])]
+    # uncomment this line to step through with debuggers
 
     with multiprocessing.Pool() as pool:
         pool_results = list(tqdm(pool.imap_unordered(_model_selection_worker_with_14, worker_args), total=N_DATASETS))
@@ -184,12 +185,11 @@ if __name__ == "__main__":
 
     M_GRID = 15
 
-    RH = 20
+    RH = 50
     X0 = 0.5
-    N_TRIALS= 3 # new standard
-    # 10 is really bad?
+    N_TRIALS= 10 # new standard
 
-    N_DATASETS = 24 # TODO make this big
+    N_DATASETS = 60 # TODO make this big
 
     # STD_FRACTION = 0.25
 

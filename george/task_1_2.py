@@ -113,7 +113,7 @@ def evaluate_psth_with_n_trials(show_plot, model_type):
 
 
 def plot_psths(params):
-    plt.figure(figsize=(12, 7))
+    plt.figure(figsize=(12 * 0.7, 7 * 0.7))
     
 
     for param in params:
