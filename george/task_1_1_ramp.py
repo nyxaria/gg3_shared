@@ -17,16 +17,38 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--show', action='store_true', help='Show plots interactively')
 args = parser.parse_args()
 
-N_TRIALS = 50  # number of trials to simulate
+N_TRIALS = 100  # number of trials to simulate
 T_DURATION = 1000  # duration of each trial in time-steps or ms
 
-beta_values = [0.5, 1, 2, 4]  # drift rate
-sigma_values = [0.3]  # noise/diffusion
+beta_values = [4, 4, 1]  # drift rate
+sigma_values = [0.1, 0.4, 0.1]  # noise/diffusion
 
-for beta in beta_values:
-    for sigma in sigma_values:
-        print(f"\nTesting β={beta}, σ={sigma}")
-        ramp_model = models.RampModel(beta=beta, sigma=sigma)
+all_bound_hitting_times = {}
+all_avg_trajectories = {}
+
+for beta, sigma in zip(beta_values, sigma_values):
+    print(f"\nTesting β={beta}, σ={sigma}")
+    ramp_model = models.RampModel(beta=beta, sigma=sigma)
+    spikes_ramp, xs_ramp, rates_ramp = ramp_model.simulate(Ntrials=N_TRIALS, T=T_DURATION, get_rate=True)
+
+    # calculate bound hitting times
+    bound_hitting_times = []
+    for trial_idx in range(N_TRIALS):
+        trial_xs = xs_ramp[trial_idx, :]
+        hit_times = np.where(trial_xs >= 1.0)[0]
+        if len(hit_times) > 0:
+            bound_hitting_times.append(hit_times[0])
+        else:
+            bound_hitting_times.append(T_DURATION)
+    
+    all_bound_hitting_times[(beta, sigma)] = bound_hitting_times
+    avg_trajectory = np.mean(xs_ramp, axis=0)
+    all_avg_trajectories[(beta, sigma)] = avg_trajectory
+
+    if beta == 4 and sigma == 0.1:
+        beta = 2
+        sigma = 0.3
+        ramp_model = models.RampModel(beta=2, sigma=0.3)
         spikes_ramp, xs_ramp, rates_ramp = ramp_model.simulate(Ntrials=N_TRIALS, T=T_DURATION, get_rate=True)
 
         # calculate bound hitting times
@@ -38,14 +60,13 @@ for beta in beta_values:
                 bound_hitting_times.append(hit_times[0])
             else:
                 bound_hitting_times.append(T_DURATION)
-
-        # spike raster
+        # # spike raster
         plt.figure(figsize=(10, 6))
         for trial_idx in range(N_TRIALS):
             spike_times_trial = np.where(spikes_ramp[trial_idx, :] > 0)[0]
             plt.plot(spike_times_trial, np.ones_like(spike_times_trial) * trial_idx, '|', color='black', markersize=5)
             plt.plot(bound_hitting_times[trial_idx], trial_idx, 'ro', markersize=5, 
-                     label='Bound Hit Time' if trial_idx == 0 else "")
+                    label='Bound Hit Time' if trial_idx == 0 else "")
 
         plt.xlabel("Time (ms)")
         plt.ylabel("Trial Number")
@@ -58,36 +79,37 @@ for beta in beta_values:
         else:
             plt.close()
 
-        # trajectories
-        plt.figure(figsize=(10, 6))
-        num_trajectories_to_plot = min(N_TRIALS, 10)
-        time_axis = np.arange(T_DURATION)
+    print(f"Mean bound-hitting time: {np.mean(bound_hitting_times):.2f} ms")
 
-        for trial_idx in range(num_trajectories_to_plot):
-            plt.plot(time_axis, xs_ramp[trial_idx, :], label=f'Trial {trial_idx+1}' if trial_idx < 5 else None)
+# Combined histogram of bound-hitting times
+plt.figure(figsize=(10, 6))
+for (beta, sigma), bound_hitting_times in all_bound_hitting_times.items():
+    if bound_hitting_times:
+        plt.hist(bound_hitting_times, bins=50, alpha=0.5, label=f'β={beta}, σ={sigma}', range=(0, T_DURATION))
 
-        plt.xlabel("Time (ms)")
-        plt.ylabel("Latent Variable x_t")
-        plt.title(f"Ramp Model - Latent Variable Trajectories (β={beta}, σ={sigma})")
-        plt.axhline(1.0, color='r', linestyle='--', label='Boundary x_t=1')
-        if num_trajectories_to_plot > 0: plt.legend(loc='lower right')
-        plt.savefig(f'plots/task_1_1_ramp_trajectories_B{beta}_S{sigma}.png', dpi=300, bbox_inches='tight')
-        if args.show:
-            plt.show()
-        else:
-            plt.close()
+plt.xlabel("Time (ms)")
+plt.ylabel("Frequency (Hz)")
+plt.title("Ramp Model - Histogram of Bound-Hitting Times")
+plt.legend()
+plt.savefig('plots/task_1_1_ramp_bound_hitting_combined.png', dpi=300, bbox_inches='tight')
+if args.show:
+    plt.show()
+else:
+    plt.close()
 
-        # bound hitting times histogram
-        plt.figure(figsize=(8, 5))
-        if bound_hitting_times:
-            plt.hist(bound_hitting_times, bins=50, color='lightgreen', edgecolor='black', range=(0, T_DURATION))
-        plt.xlabel("Time (ms)")
-        plt.ylabel("Frequency (Hz)")
-        plt.title(f"Ramp Model - Histogram of Bound-Hitting Times (β={beta}, σ={sigma})")
-        plt.savefig(f'plots/task_1_1_ramp_bound_hitting_B{beta}_S{sigma}.png', dpi=300, bbox_inches='tight')
-        if args.show:
-            plt.show()
-        else:
-            plt.close()
+# Combined average trajectories plot
+plt.figure(figsize=(10, 6))
+time_axis = np.arange(T_DURATION)
+for (beta, sigma), avg_trajectory in all_avg_trajectories.items():
+    plt.plot(time_axis, avg_trajectory, label=f'β={beta}, σ={sigma}')
 
-        print(f"Mean bound-hitting time: {np.mean(bound_hitting_times):.2f} ms")
+plt.xlabel("Time (ms)")
+plt.ylabel("Average Latent Variable $x_t$")
+plt.title("Ramp Model - Average Latent Variable Trajectories")
+plt.axhline(1.0, color='r', linestyle='--', label='Boundary $x_t=1$')
+plt.legend(loc='lower right')
+plt.savefig('plots/task_1_1_ramp_avg_trajectories_combined.png', dpi=300, bbox_inches='tight')
+if args.show:
+    plt.show()
+else:
+    plt.close()
