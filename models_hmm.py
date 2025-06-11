@@ -230,7 +230,7 @@ class StepModelHMM():
                 # in this model, p_t = P(rth success occurs after exactly t failures|rth success occurs after > t-1 failures)
                 p_t = nbinom.pmf(t, self.r, self.p)/(1-nbinom.cdf(t, self.r, self.p))
                 transition = np.array([[1-p_t, p_t], [0, 1]])
-                sample = npr.binomial(1,transition[state][state+1])
+                sample = npr.binomial(1,np.clip(transition[state][state+1], 0, 1))
                 state+=sample
                 if state==1:
                     break

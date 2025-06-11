@@ -4,8 +4,18 @@ import scipy
 import inference
 from models_hmm import RampModelHMM, StepModelHMM
 import matplotlib.pyplot as plt
-from collections import OrderedDict as OD
 
+plt.rcParams.update({
+    'font.size': 14,
+    'axes.titlesize': 16,
+    'axes.labelsize': 14,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 12,
+    'figure.titlesize': 18
+})
+
+from collections import OrderedDict as OD
 
 np.set_printoptions(legacy='1.21') # don't show np.float; helps with debug
 

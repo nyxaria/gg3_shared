@@ -15,7 +15,7 @@ plt.rcParams.update({
     'figure.titlesize': 18
 })
 
-K = 50  # Markov size
+K = 50 
 Rh = 100
 x0 = 0.2
 beta = 0.5

@@ -120,10 +120,7 @@ def analyze_and_plot_accuracy_heatmaps(beta_vals, sigma_vals, x0, K, T, n_trials
             pickle.dump(errors, f)
         print(f"Saved errors to cache: {cache_filename}")
 
-    # Calculate extent for plotting to align pixels with ticks
     delta_beta = beta_vals[1] - beta_vals[0]
-    # NOTE: for log-spaced sigma, the step is not constant.
-    # We use the first and last step for a better approximation of extent.
     delta_sigma_first = sigma_vals[1] - sigma_vals[0]
     delta_sigma_last = sigma_vals[-1] - sigma_vals[-2]
     extent = [
@@ -131,7 +128,6 @@ def analyze_and_plot_accuracy_heatmaps(beta_vals, sigma_vals, x0, K, T, n_trials
         sigma_vals[0] - delta_sigma_first / 2, sigma_vals[-1] + delta_sigma_last / 2
     ]
 
-    # Plotting RMSE
     plt.figure(figsize=(10, 8))
     im = plt.imshow(errors['rmse'], aspect='auto', origin='lower', extent=extent, cmap='viridis')
     plt.colorbar(im, label="RMSE of mean $x_t$")
@@ -143,7 +139,6 @@ def analyze_and_plot_accuracy_heatmaps(beta_vals, sigma_vals, x0, K, T, n_trials
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.show()
 
-    # Plotting Signed Mean Error
     plt.figure(figsize=(10, 8))
     signed_errors_matrix = errors['signed']
     max_abs_error = np.max(np.abs(signed_errors_matrix))
@@ -185,12 +180,11 @@ def main():
     
     n_grid_points = 15
     beta_vals = np.linspace(0, 4, n_grid_points)
-    # Using logspace for sigma as it spans orders of magnitude
     sigma_vals = np.logspace(np.log10(0.04), np.log10(4), n_grid_points)
     sigma_vals = np.linspace(0.04, 4, n_grid_points)
 
     x0_heatmap = 0.2
-    n_trials_heatmap = 100 # Reduced for performance
+    n_trials_heatmap = 100
     
     analyze_and_plot_accuracy_heatmaps(beta_vals=beta_vals,
                                        sigma_vals=sigma_vals,
