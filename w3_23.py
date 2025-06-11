@@ -185,7 +185,8 @@ if __name__ == "__main__":
     RH = 20
     X0 = 0.5
     N_TRIALS= 10 # new standard
-    N_DATASETS = 24 # TODO make this big
+
+    N_DATASETS = 120 # TODO make this big
 
     # STD_FRACTION = 0.25
 
@@ -262,7 +263,9 @@ if __name__ == "__main__":
         save_to=os.path.join(os.getcwd(), fn)
     )
 
-    w3_2.plot_heatmap(fn, r'Heatmap (Gaussian sampling + posterior, $\sigma_{frac} = 0.25$)')
-    w3_2.plot_confusion_matrix(fn, 'Confusion Matrix (Gaussian sampling + posterior, $\sigma_{frac} = 0.25$)')
+    w3_2.plot_heatmap(fn, r'Heatmap (Gaussian sampling + posterior, $\sigma_{frac} = 0.25$)',
+                      save_name=os.path.join(os.getcwd(), f'plots/task_3_2_3_{os.path.basename(fn)[:-4]}_heatmap.png'))
+    w3_2.plot_confusion_matrix(fn, r'Confusion Matrix (Gaussian sampling + posterior, $\sigma_{frac} = 0.25$)',
+                               save_name=os.path.join(os.getcwd(), f'plots/task_3_2_3_{os.path.basename(fn)[:-4]}_confmat.png'))
 
-    exit()
+    # exit()

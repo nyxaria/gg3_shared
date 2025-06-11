@@ -37,6 +37,7 @@ def compare_jump_time_histograms(m, r, n_trials, n_datasets, T):
         "Week 1 Model": {
             "model_class": models.StepModel,
             "sim_func": "simulate",
+            "plot_type": "line"
         },
         "HMM (2-state)": {
             "model_class": models_hmm.StepModelHMM,
@@ -85,10 +86,15 @@ def compare_jump_time_histograms(m, r, n_trials, n_datasets, T):
                 pickle.dump(avg_hist, f)
             print(f"  Saved to cache: {cache_filename}")
 
-    plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(12 * 0.8, 8 * 0.8))
     
     for name, avg_hist in all_avg_hists.items():
-        plt.bar(bin_edges[:-1], avg_hist, width=bin_width, alpha=0.5, label=name, align='edge')
+        if models_to_compare[name].get('plot_type') == "line":
+            bin_centers = bin_edges[:-1] + bin_width / 2
+
+            plt.plot(bin_centers, avg_hist, alpha=1, label=name, color='black')
+        else:
+            plt.bar(bin_edges[:-1], avg_hist, width=bin_width, alpha=0.5, label=name, align='edge')
 
     plt.xlabel('Jump Time (ms)')
     plt.ylabel('Probability Density')
@@ -96,7 +102,7 @@ def compare_jump_time_histograms(m, r, n_trials, n_datasets, T):
     plt.legend()
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     
-    savename = f'plots/task_2_2_histogram_comparison_m{m}_r{r}.png'
+    savename = f'plots/task_2_2_histogram_comparison_m{m}_r{r}_line.png'
     os.makedirs('plots', exist_ok=True)
     plt.savefig(savename, dpi=300, bbox_inches='tight')
     plt.show()

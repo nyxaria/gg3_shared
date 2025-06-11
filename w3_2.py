@@ -127,7 +127,7 @@ def model_selection(ramp_params_grid, step_params_grid, gen_ramp, gen_step, ramp
     return results
 
 
-def plot_heatmap(results_df, title='Untitled Heatmap', save_name=None):
+def plot_heatmap(results_df, title='Untitled Heatmap', interp_method='linear', save_name=None):
     """
     Plot heatmaps comparing model performance on ramp and step data
     
@@ -140,20 +140,25 @@ def plot_heatmap(results_df, title='Untitled Heatmap', save_name=None):
     if isinstance(results_df, str):
         results_df = pd.read_csv(results_df)
     
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15 * 0.7, 6 * 0.7))
 
     # Ramp data heatmap
     grid_x1, grid_y1 = np.mgrid[0:4:100j, 0.04:4:100j]
     grid_z1 = griddata((results_df['beta'], results_df['sigma']),
                        np.array(results_df['ramp_data_ramp_bf']) - np.array(results_df['ramp_data_step_bf']),
                        (grid_x1, grid_y1),
-                       method='cubic')
+                       method=interp_method)
 
-    im1 = ax1.pcolormesh(grid_x1, grid_y1, grid_z1, cmap='coolwarm', shading='auto')
-    ax1.scatter(results_df['beta'], results_df['sigma'], c='black', s=20, alpha=0.5)
+    max_val = np.nanmax(np.abs(grid_z1))
+    norm = plt.Normalize(vmin=-max_val, vmax=max_val)
+
+    im1 = ax1.pcolormesh(grid_x1, grid_y1, grid_z1, cmap='coolwarm', shading='auto', norm=norm)
+
+    ax1.scatter(results_df['beta'], results_df['sigma'], c='black', s=5, alpha=0.1)
     ax1.set_xlabel('beta')
     ax1.set_ylabel('sigma') 
     ax1.set_title('Ramp Data')
+
     ax1.set_yscale('log')
     plt.colorbar(im1, ax=ax1)
 
@@ -165,12 +170,14 @@ def plot_heatmap(results_df, title='Untitled Heatmap', save_name=None):
                        method='cubic')
 
     im2 = ax2.pcolormesh(grid_x2, grid_y2, grid_z2, cmap='coolwarm', shading='auto')
-    ax2.scatter(results_df['m'], results_df['r'], c='black', s=20, alpha=0.5)
+    ax2.scatter(results_df['m'], results_df['r'], c='black', s=5, alpha=0.1)
     ax2.set_xlabel('m')
     ax2.set_ylabel('r')
     ax2.set_title('Step Data')
 
-    plt.title(title)
+    fig.suptitle(title, fontsize=20)
+
+    plt.tight_layout()
     plt.colorbar(im2, ax=ax2)
 
     if save_name:
@@ -255,6 +262,8 @@ def plot_confusion_matrix(csv_path, plot_title, save_name='confmat', normalize=T
 
         plt.savefig(save_name + ' - ML (1.4)')
         plt.show()
+
+    return conf_matrix[0, 0], conf_matrix[1, 1]
 
 
 

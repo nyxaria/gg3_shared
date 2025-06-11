@@ -28,9 +28,9 @@ if __name__ == "__main__":
     # step implementation
 
     trials = 500
-    trials_to_plot = 3
+    trials_to_plot = 1
     T = 100
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8),
+    '''fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8),
                                    gridspec_kw={'height_ratios': [4, 1]})
 
     CE_sum = np.zeros(T)
@@ -128,14 +128,15 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     os.makedirs('plots', exist_ok=True)
-    plt.savefig('./plots/task_2_3_step_filter_traces.png')
+    plt.show()
+    plt.savefig('./plots/task_2_3_step_filter_traces_final.png')'''
 
 
-    '''
+
     # Ramp implementation
     
     trials = 50
-    trials_to_plot = 3
+    trials_to_plot = 1
     T = 100
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8),
                                    gridspec_kw={'height_ratios': [4, 1]})
@@ -148,9 +149,9 @@ if __name__ == "__main__":
     for trial in range(trials):
         ex, fex, expected_s, fexpected_s, states = task_2_3.ramp_HMM_inference({
             'T': T,
-            'beta': 1.5,
+            'beta': 0.5,
             'sigma': 0.35,
-            'Rh': 20,
+            'Rh': 50,
         }, test_filtering=True)
 
 
@@ -213,5 +214,5 @@ if __name__ == "__main__":
                loc='upper left', ncol=2, framealpha=0.5)
 
     plt.tight_layout()
-    plt.savefig('./plots/task_2_3_ramp_filter_traces_highbeta.png')
-'''
+    plt.show()
+    plt.savefig('./plots/task_2_3_ramp_filter_traces_final.png')
