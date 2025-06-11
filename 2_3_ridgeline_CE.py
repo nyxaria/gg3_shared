@@ -13,16 +13,6 @@ import matplotlib.cm as cm
 
 import task_2_3
 
-plt.rcParams.update({
-    'font.size': 14,
-    'axes.titlesize': 16,
-    'axes.labelsize': 14,
-    'xtick.labelsize': 12,
-    'ytick.labelsize': 12,
-    'legend.fontsize': 12,
-    'figure.titlesize': 18
-})
-
 np.set_printoptions(legacy='1.25')  # don't show np.float; helps with debug
 
 if __name__ == "__main__":
@@ -190,3 +180,156 @@ if __name__ == "__main__":
 
 
     plt.savefig('./plots/task_2_3_ridgeline_15b.png')
+
+    
+    # Ramp version (sigma)
+    
+    num_trials = 15
+    num_samples = 20
+    K = 50
+    T = 100
+    save_filename = "./results/ridgeline_21s.npy"
+    recompute = False
+
+    sigmas = np.linspace(0, 4, num_samples)
+    beta = 1.5
+
+    if os.path.exists(save_filename) and not recompute:
+        print("loading " + save_filename)
+        CE_mat = np.load(save_filename)
+    else:
+        print("computing")
+        CE_mat = np.zeros((num_samples, T))
+
+        for i1, s in enumerate(sigmas):
+            sum_CE = 0
+            for _ in range(num_trials):
+                ex, expected_s, states = task_2_3.ramp_HMM_inference({
+                    # "x0": 0.02,
+                    "beta": beta,
+                    "sigma": s,
+                    "K": K
+                })
+                sum_CE += task_2_3.cross_entropy(ex, states)
+            CE_mat[i1] = sum_CE / num_trials
+
+            print(f'Progress: {i1 + 1}/{num_samples} (sigma)')
+
+        np.save(save_filename, CE_mat)
+        print(f"saved to {save_filename}")
+
+    # smooth and take the negative differential
+    dCE = np.diff(CE_mat, axis=1)
+    dCE = scipy.ndimage.gaussian_filter1d(dCE, 2, axis=1)
+
+    dCE *= -1
+    ymax = np.max(dCE)
+    dCE /= ymax
+
+    df = pd.DataFrame(dCE.T)
+    df.columns = [f"{s:.2f}" for s in sigmas]
+
+    # Create ridgeline plot
+    plt.figure(figsize=(10, 8))
+
+
+    xrange = list(range(T))
+
+
+    fig, axes = joypy.joyplot(df,
+                            kind="values",
+                            overlap=5/15,
+                            fade=True,
+                            linecolor='black',
+                            linewidth=0.5,
+                            colormap=cm.coolwarm,
+                            ylim=(0, 1),
+                            title='Decrease in Cross-Entropy over time for varying σ',
+                            x_range=xrange)
+
+    plt.xlabel(r"t", fontsize=12)
+
+    ax = axes[-1]
+    ax.yaxis.set_label_position("right")
+    ax.set_ylabel("σ")
+    ax.yaxis.set_visible(True)
+    ax.yaxis.set_ticks([])
+
+    plt.savefig('./plots/task_2_3_ridgeline_20s.png')
+
+
+    # Step version (m)
+
+    num_trials = 500 # trials per parameter combo
+    num_samples = 15 # on parameter space
+    T = 250
+    save_filename = "./results/ridgeline_15m_T250.npy"
+    recompute = False
+
+    ms = np.linspace(T * 0.25, T * 0.75, num_samples)
+
+    ivar = ms
+    r = 10
+
+    if os.path.exists(save_filename) and not recompute:
+        print("loading " + save_filename)
+        CE_mat = np.load(save_filename)
+    else:
+        print("computing")
+        CE_mat = np.zeros((num_samples, T))
+
+        for i1, iv in enumerate(ivar):  # iv for independent variable
+            sum_CE = 0
+            for _ in range(num_trials):
+                ex, expected_s, states = task_2_3.step_HMM_inference({
+                    "r": r,
+                    "m": iv,
+                    "T": T
+                })
+
+                bex = task_2_3.compress_states(ex)
+                bstates = (states == r).astype(int)
+                sum_CE += task_2_3.cross_entropy(bex, bstates)
+
+            CE_mat[i1] = sum_CE / num_trials
+
+            print(f'Progress: {i1 + 1}/{num_samples} (m)')
+
+        np.save(save_filename, CE_mat)
+        print(f"saved to {save_filename}")
+
+    # what if we just plot the CE?
+    dCE = CE_mat
+
+    ymax = np.max(dCE)
+    dCE /= ymax
+
+    df = pd.DataFrame(dCE.T)
+    df.columns = [f"{iv:.2f}" for iv in ivar]
+
+    # Create ridgeline plot
+    plt.figure(figsize=(10, 8))
+
+    xrange = list(range(T))
+
+    fig, axes = joypy.joyplot(df,
+                              kind="values",
+                              overlap=5 / 15,
+                              fade=True,
+                              linecolor='black',
+                              linewidth=0.5,
+                              colormap=cm.coolwarm,
+                              ylim=(-1, 1),
+                              title='Cross-Entropy over time for varying m',
+                              x_range=xrange)
+
+    plt.xlabel(r"t", fontsize=12)
+
+    ax = axes[-1]
+    ax.yaxis.set_label_position("right")
+    ax.set_ylabel("m")
+    ax.yaxis.set_visible(True)
+    ax.yaxis.set_ticks([])
+
+    os.makedirs('plots', exist_ok=True)
+    plt.savefig('./plots/task_2_3_ridgeline_15m.png')

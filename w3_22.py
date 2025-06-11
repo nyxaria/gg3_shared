@@ -24,8 +24,8 @@ def run_and_plot_selection(filename, ramp_grid, step_grid, gen_ramp_post, gen_st
             N_DATASETS=n_datasets, N_TRIALS=n_trials,
             save_to=filename
         )
-    else:
-        print(f"Found existing results file: {filename}")
+    # else:
+    #     print(f"Found existing results file: {filename}")
 
 
     heatmap_savename = f'plots/task_3_2_2_{os.path.basename(filename)[:-4]}_heatmap.png'
@@ -86,9 +86,9 @@ if __name__ == "__main__":
     N_DATASETS = 50
     N_TRIALS_LIST = [5, 10, 15, 20, 30, 50]
     sigma_fract_list = [0.125, 0.25, 0.5]
-    accuracies = {'Uniform': []}
+    accuracies = {'Uniform': {'ramp': [], 'step': []}}
     for sf in sigma_fract_list:
-        accuracies[f'Gaussian, SF={sf}'] = []
+        accuracies[f'Gaussian, SF={sf}'] = {'ramp': [], 'step': []}
 
     for N_TRIALS in N_TRIALS_LIST:
         print("--------------------------------")
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         # TEST 1
 
         fn = "./results/UU_D" + str(N_DATASETS) + "_T" + str(N_TRIALS) + ".csv"
-        ramp_accuracy, step_accuracy = run_and_plot_selection(
+        step_accuracy, ramp_accuracy = run_and_plot_selection(
             filename=fn,
             ramp_grid=ramp_params_grid,
             step_grid=step_params_grid,
@@ -111,7 +111,8 @@ if __name__ == "__main__":
             Rh=RH,
             x0=X0
         )
-        accuracies['Uniform'].append((ramp_accuracy+step_accuracy)/2)
+        accuracies['Uniform']['ramp'].append(ramp_accuracy)
+        accuracies['Uniform']['step'].append(step_accuracy)
 
         # TEST 2
 
@@ -141,7 +142,7 @@ if __name__ == "__main__":
 
             fn = "./results/GU_D" + str(N_DATASETS) + "_T" + str(N_TRIALS) + "_SF" + str(STD_FRACTION) + ".csv"
 
-            ramp_accuracy, step_accuracy = run_and_plot_selection(
+            step_accuracy, ramp_accuracy = run_and_plot_selection(
                 filename=fn,
                 ramp_grid=ramp_params_grid,
                 step_grid=step_params_grid,
@@ -155,11 +156,13 @@ if __name__ == "__main__":
                 Rh=RH,
                 x0=X0
             )
-            accuracies[f'Gaussian, SF={STD_FRACTION}'].append((ramp_accuracy+step_accuracy)/2)
+            accuracies[f'Gaussian, SF={STD_FRACTION}']['ramp'].append(ramp_accuracy)
+            accuracies[f'Gaussian, SF={STD_FRACTION}']['step'].append(step_accuracy)
 
     plt.figure(figsize=(10, 6))
-    for label, accs in accuracies.items():
-        plt.plot(N_TRIALS_LIST, accs, marker='o', linestyle='-', label=label)
+    for label, accs_dict in accuracies.items():
+        avg_accs = [(r + s) / 2 for r, s in zip(accs_dict['ramp'], accs_dict['step'])]
+        plt.plot(N_TRIALS_LIST, avg_accs, marker='o', linestyle='-', label=label)
     
     plt.xlabel("Number of Trials")
     plt.ylabel("Overall HMM Accuracy")
@@ -168,4 +171,19 @@ if __name__ == "__main__":
     plt.grid(True)
     plt.ylim(0.45, 1.05)
     plt.savefig('plots/task_3_2_2_accuracy_vs_n_trials.png')
+    plt.show()
+
+    plt.figure(figsize=(10, 6))
+    colors = plt.cm.viridis(np.linspace(0, 1, len(accuracies)))
+    for i, (label, accs_dict) in enumerate(accuracies.items()):
+        plt.plot(N_TRIALS_LIST, accs_dict['ramp'], marker='o', linestyle='-', label=f'{label} (Ramp)', color=colors[i])
+        plt.plot(N_TRIALS_LIST, accs_dict['step'], marker='x', linestyle='--', label=f'{label} (Step)', color=colors[i])
+
+    plt.xlabel("Number of Trials")
+    plt.ylabel("HMM Accuracy")
+    plt.title("Ramp vs. Step HMM Accuracy for Different Priors")
+    plt.legend()
+    plt.grid(True)
+    plt.ylim(0.45, 1.05)
+    plt.savefig('plots/task_3_2_2_accuracy_breakdown_vs_n_trials.png')
     plt.show()

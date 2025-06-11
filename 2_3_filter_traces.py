@@ -30,7 +30,7 @@ if __name__ == "__main__":
     trials = 500
     trials_to_plot = 1
     T = 100
-    '''fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8),
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8),
                                    gridspec_kw={'height_ratios': [4, 1]})
 
     CE_sum = np.zeros(T)
@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
     handles, labels = ax1.get_legend_handles_labels()
     unique_labels = dict(zip(labels, handles))
-    ax1.set_title("Markov state (s) over time")
+    ax1.set_title("Step Model: Markov state (s) over time")
     ax1.set_ylabel("Markov state (proportional to rate)")
     ax1.legend(unique_labels.values(), unique_labels.keys(),
                loc='lower right', ncol=2, framealpha=0.5)
@@ -129,8 +129,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     os.makedirs('plots', exist_ok=True)
     plt.show()
-    plt.savefig('./plots/task_2_3_step_filter_traces_final.png')'''
-
+    plt.savefig('./plots/task_2_3_step_filter_traces_final.png')
 
 
     # Ramp implementation
@@ -208,7 +207,7 @@ if __name__ == "__main__":
 
     handles, labels = ax1.get_legend_handles_labels()
     unique_labels = dict(zip(labels, handles))
-    ax1.set_title("Markov state (s) over time")
+    ax1.set_title("Ramp Model: Markov state (s) over time")
     ax1.set_ylabel("Markov state (proportional to rate)")
     ax1.legend(unique_labels.values(), unique_labels.keys(),
                loc='upper left', ncol=2, framealpha=0.5)
