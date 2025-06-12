@@ -127,7 +127,7 @@ def model_selection(ramp_params_grid, step_params_grid, gen_ramp, gen_step, ramp
     return results
 
 
-def plot_heatmap(results_df, title='Untitled Heatmap', interp_method='linear', save_name=None, show=True):
+def plot_heatmap(results_df, title='Untitled Heatmap', interp_method='linear', save_name=None, show=True, vertical=False):
     """
     Plot heatmaps comparing model performance on ramp and step data
     
@@ -139,8 +139,11 @@ def plot_heatmap(results_df, title='Untitled Heatmap', interp_method='linear', s
 
     if isinstance(results_df, str):
         results_df = pd.read_csv(results_df)
-    
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15 * 0.7, 6 * 0.7))
+
+    if vertical:
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6 * 0.7, 12 * 0.7))
+    else:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15 * 0.7, 6 * 0.7))
 
     # Ramp data heatmap
     grid_x1, grid_y1 = np.mgrid[0:4:100j, 0.04:4:100j]

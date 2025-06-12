@@ -86,7 +86,7 @@ def compare_jump_time_histograms(m, r, n_trials, n_datasets, T):
                 pickle.dump(avg_hist, f)
             print(f"  Saved to cache: {cache_filename}")
 
-    plt.figure(figsize=(12 * 0.7, 8 * 0.7))
+    plt.figure(figsize=(12 * 0.6, 8 * 0.6))
     
     for name, avg_hist in all_avg_hists.items():
         if models_to_compare[name].get('plot_type') == "line":
