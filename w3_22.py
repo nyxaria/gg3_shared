@@ -14,7 +14,7 @@ from matplotlib.lines import Line2D
 var = lambda a, b, frac: ((b-a) * frac) ** 2
 mean = lambda a, b: (b+a)/2
 
-def run_and_plot_selection(filename, ramp_grid, step_grid, gen_ramp_post, gen_step_post, inf_ramp_post, inf_step_post, n_datasets, n_trials, plot_title_prefix, Rh, x0):
+def run_and_plot_selection(filename, ramp_grid, step_grid, gen_ramp_post, gen_step_post, inf_ramp_post, inf_step_post, n_datasets, n_trials, plot_title_prefix, Rh, x0, show=False, plot=True):
     
     if not os.path.exists(filename):
         print(f"Running model selection, saving to {filename}...")
@@ -33,8 +33,8 @@ def run_and_plot_selection(filename, ramp_grid, step_grid, gen_ramp_post, gen_st
     confmat_savename = f'plots/task_3_2_2_{os.path.basename(filename)[:-4]}_confmat.png'
     plot_title = f'{plot_title_prefix}, {n_trials} trials/dataset, Rh={Rh}, x0={x0}'
     
-    w3_2.plot_heatmap(filename, plot_title, save_name=heatmap_savename, show=False)
-    ramp_accuracy, step_accuracy = w3_2.plot_confusion_matrix(filename, plot_title, save_name=confmat_savename, show=False)
+    w3_2.plot_heatmap(filename, plot_title, save_name=heatmap_savename, show=show)
+    ramp_accuracy, step_accuracy = w3_2.plot_confusion_matrix(filename, plot_title, save_name=confmat_savename, show=show)
     return ramp_accuracy, step_accuracy
 
 

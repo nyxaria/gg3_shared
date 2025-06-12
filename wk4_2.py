@@ -93,7 +93,7 @@ fig5 = plt.figure()
 fig6 = plt.figure()
 
 for g in np.array([1,3,5]):
-    model = models.RampModel(isi_gamma_shape=g)
+    model = models.RampModel(beta=2, isi_gamma_shape=g)
     spikes, xs, _ = model.simulate(Ntrials=N_TRIALS, T=T)
 
     # calculate bound hitting times
