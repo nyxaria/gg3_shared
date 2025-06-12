@@ -8,6 +8,7 @@ import w3_2
 import w3_utils
 from models_hmm import RampModelHMM
 import pandas as pd
+from matplotlib.lines import Line2D
 
 
 var = lambda a, b, frac: ((b-a) * frac) ** 2
@@ -85,7 +86,7 @@ if __name__ == "__main__":
 
     N_DATASETS = 50
     N_TRIALS_LIST = [5, 10, 15, 20, 30, 50]
-    sigma_fract_list = [0.125, 0.25, 0.5]
+    sigma_fract_list = [0.0625, 0.125, 0.25, 0.5]
     accuracies = {'Uniform': {'ramp': [], 'step': []}}
     for sf in sigma_fract_list:
         accuracies[f'Gaussian, SF={sf}'] = {'ramp': [], 'step': []}
@@ -171,19 +172,71 @@ if __name__ == "__main__":
     plt.grid(True)
     plt.ylim(0.45, 1.05)
     plt.savefig('plots/task_3_2_2_accuracy_vs_n_trials.png')
-    plt.show()
+    # plt.show()
+    plt.close()
 
-    plt.figure(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(10, 6))
     colors = plt.cm.viridis(np.linspace(0, 1, len(accuracies)))
     for i, (label, accs_dict) in enumerate(accuracies.items()):
-        plt.plot(N_TRIALS_LIST, accs_dict['ramp'], marker='o', linestyle='-', label=f'{label} (Ramp)', color=colors[i])
-        plt.plot(N_TRIALS_LIST, accs_dict['step'], marker='x', linestyle='--', label=f'{label} (Step)', color=colors[i])
+        ax.plot(N_TRIALS_LIST, accs_dict['ramp'], marker='o', linestyle='-', label=label, color=colors[i])
+        ax.plot(N_TRIALS_LIST, accs_dict['step'], marker='x', linestyle='--', color=colors[i])
 
-    plt.xlabel("Number of Trials")
-    plt.ylabel("HMM Accuracy")
-    plt.title("Ramp vs. Step HMM Accuracy for Different Priors")
-    plt.legend()
-    plt.grid(True)
-    plt.ylim(0.45, 1.05)
+    ax.set_xlabel("Number of Trials")
+    ax.set_ylabel("HMM Accuracy")
+    ax.set_title("Ramp vs. Step HMM Accuracy for Different Priors")
+    ax.grid(True)
+    ax.set_ylim(0.45, 1.05)
+
+    # Create the top legend for model types (linestyles) and add it as an artist
+    linestyle_handles = [
+        Line2D([], [], color='gray', linestyle='-', marker='o', label='Ramp'),
+        Line2D([], [], color='gray', linestyle='--', marker='x', label='Step')
+    ]
+    linestyle_legend = ax.legend(handles=linestyle_handles, loc='lower right')
+    ax.add_artist(linestyle_legend)
+
+    # Create the bottom legend for prior types, positioned below the first one
+    ax.legend(title='Prior Type', loc='lower right', bbox_to_anchor=(1, 0.12))
+    
+    fig.tight_layout()
     plt.savefig('plots/task_3_2_2_accuracy_breakdown_vs_n_trials.png')
+    # plt.show()
+    plt.close()
+
+    prior_labels = ['Uniform', 'Gaussian, SF=0.5', 'Gaussian, SF=0.25', 'Gaussian, SF=0.125', 'Gaussian, SF=0.0625']
+    ramp_acc_matrix = np.array([accuracies[label]['ramp'] for label in prior_labels]).T
+    step_acc_matrix = np.array([accuracies[label]['step'] for label in prior_labels]).T
+
+    heatmap_xticklabels = []
+    for label in prior_labels:
+        if 'Gaussian' in label:
+            val = label.split('=')[-1]
+            heatmap_xticklabels.append(fr'Gaus $\sigma_{{frac}}$=1/{int(1/float(val))}')
+        else:
+            heatmap_xticklabels.append(label)
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
+
+    # Ramp accuracy heatmap
+    im1 = ax1.imshow(ramp_acc_matrix, cmap='viridis', aspect='auto', origin='lower', vmin=0.5, vmax=1)
+    ax1.set_title('Ramp Model Accuracy')
+    ax1.set_xticks(np.arange(len(prior_labels)))
+    ax1.set_xticklabels(heatmap_xticklabels, rotation=45, ha="right")
+    ax1.set_yticks(np.arange(len(N_TRIALS_LIST)))
+    ax1.set_yticklabels(N_TRIALS_LIST)
+    ax1.set_ylabel('Number of Trials')
+    fig.colorbar(im1, ax=ax1, label='Accuracy')
+
+    # step accuracy heatmap
+    im2 = ax2.imshow(step_acc_matrix, cmap='viridis', aspect='auto', origin='lower', vmin=0.5, vmax=1)
+    ax2.set_title('Step Model Accuracy')
+    ax2.set_xticks(np.arange(len(prior_labels)))
+    ax2.set_xticklabels(heatmap_xticklabels, rotation=45, ha="right")
+    ax2.set_yticks(np.arange(len(N_TRIALS_LIST)))
+    ax2.set_yticklabels(N_TRIALS_LIST)
+    fig.colorbar(im2, ax=ax2, label='Accuracy')
+
+    fig.suptitle('HMM Accuracy Heatmaps for Different Priors and Trial Counts', fontsize=16)
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.savefig('plots/task_3_2_2_accuracy_heatmaps.png')
     plt.show()

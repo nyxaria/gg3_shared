@@ -208,6 +208,8 @@ def task_3_1_1_visualize_map_error(model_type, true_param_specs, inference_param
     if show:
         plt.show()
     plt.close()
+    return expectation_error_grid
+
 
 def _analyze_estimation_worker(args):
     model_type, true_params, n_trials, params_grid, param_names, K, T, Rh = args
@@ -285,18 +287,25 @@ def task_3_1_2_analyze_estimation_2d(model_type, true_params, n_trials_list, par
             pickle.dump((estimation_errors, posterior_stds), f)
         print(f"Saved to cache: {cache_filename}")
 
-    plt.figure(figsize=(12, 5))
+    plt.figure(figsize=(10, 7))
+    colors = ['#1f77b4', '#ff7f0e']
+    param_labels = {'beta': r'$\beta$', 'sigma': r'$\sigma$', 'm': 'm', 'r': 'r'}
+
     for i, p in enumerate(param_names):
-        plt.subplot(1, 2, i + 1)
-        plt.plot(n_trials_list, estimation_errors[p], 'o-', label='Estimation Error')
-        plt.plot(n_trials_list, posterior_stds[p], 's--', label='Posterior Std Dev')
-        plt.xlabel('Number of Trials')
-        plt.ylabel('Error / Std Dev')
-        plt.title(f'Parameter: {p}')
-        plt.legend()
-        plt.xscale('log')
-        plt.yscale('log')
+        error = np.array(estimation_errors[p])
+        std_dev = np.array(posterior_stds[p])
+        
+        plt.plot(n_trials_list, error, 'o-', color=colors[i], label=f'Parameter {param_labels.get(p, p)}')
+        plt.fill_between(n_trials_list, error - std_dev, error + std_dev, color=colors[i], alpha=0.2)
+
+    plt.xlabel('Number of Trials')
+    plt.ylabel('Error / Std Dev')
     plt.suptitle(f'{model_type.capitalize()} Model\nEstimation Quality vs. Number of Trials (N Datasets={n_datasets})')
+    plt.legend()
+    plt.xscale('log')
+    # plt.yscale('log')
+    plt.grid(True, which="both", ls="--")
+    
     filepath = f"plots/task_3_1_2_{model_type}_x{true_params['x0']}_ND{n_datasets}_Nerror_vs_ntrials.png"
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     plt.tight_layout()
@@ -304,6 +313,7 @@ def task_3_1_2_analyze_estimation_2d(model_type, true_params, n_trials_list, par
     if show:
         plt.show()
     plt.close()
+    return estimation_errors
 
 def task_3_1_3_visualize_posterior_marginal(model_type, true_params, n_trials, param_specs, params_grid, K=50, T=100, Rh=50, show=False):
     if model_type == 'ramp':
@@ -446,8 +456,9 @@ if __name__ == "__main__":
     RH = 50
 
     map_x0 = 0.0
+
     N_MAP_TRIALS = 400
-    N_DATASETS_AVG = 30
+    N_DATASETS_AVG = 10
 
     M_2D_GRID = 31
     M_TRUE_GRID = 11
@@ -498,9 +509,11 @@ if __name__ == "__main__":
     task_3_1_1_visualize_map_error('ramp', ramp_true_param_specs, ramp_inference_param_specs, n_trials=N_MAP_TRIALS, K=K, T=T_MS, Rh=RH, show=args.show)
 
     # 3.1.2
+
     n_trials_list = [1, 5, 10, 20, 50, 100, 200, 400]
     ramp_params_grid_2d = w3_utils.make_params_grid(ramp_inference_param_specs)
-    task_3_1_2_analyze_estimation_2d('ramp', ramp_true_params, n_trials_list, ramp_params_grid_2d, n_datasets=N_DATASETS_AVG, K=K, T=T_MS, Rh=RH, show=args.show)
+    task_3_1_2_analyze_estimation_2d('ramp', {'beta': ramp_param_2d['beta'][M_2D_GRID//2], 'sigma': ramp_param_2d['sigma'][2], 'x0': 0.0}, n_trials_list, ramp_params_grid_2d, n_datasets=N_DATASETS_AVG, K=K, T=T_MS, Rh=RH, show=args.show or True)
+    
     
     # 3.1.3
     ramp_params_specs_3d = OD([
@@ -551,10 +564,15 @@ if __name__ == "__main__":
     ])
     task_3_1_1_visualize_map_error('step', step_true_param_specs, step_inference_param_specs, n_trials=N_MAP_TRIALS, K=K, T=T_MS, Rh=RH, show=args.show)
 
+
     # 3.1.2
+    step_true_params = {'m': step_param_2d['m'][M_2D_GRID//2], 'r': step_param_2d['r'][2], 'x0': 0.0}
+
     n_trials_list = [1, 5, 10, 20, 50, 100, 200, 400]
     step_params_grid_2d = w3_utils.make_params_grid(step_inference_param_specs)
-    task_3_1_2_analyze_estimation_2d('step', step_true_params, n_trials_list, step_params_grid_2d, n_datasets=N_DATASETS_AVG, K=K, T=T_MS, Rh=RH, show=args.show)
+    task_3_1_2_analyze_estimation_2d('step',  {'m': step_param_2d['m'][M_2D_GRID//2], 'r': step_param_2d['r'][-2], 'x0': 0.0}, n_trials_list, step_params_grid_2d,
+                                      n_datasets=N_DATASETS_AVG*3, K=K, T=T_MS, Rh=RH,
+                                      show=args.show or True)
 
     # 3.1.3
     step_params_specs_3d = OD([
@@ -574,3 +592,48 @@ if __name__ == "__main__":
     ])
     step_params_grid_3d = w3_utils.make_params_grid(step_params_specs_3d)
     # task_3_1_3_analyze_estimation_3d('step', step_true_params, n_trials_list=[50, 100, 200], params_grid=step_params_grid_3d, n_datasets=N_DATASETS_AVG, K=K, T=T_MS, Rh=RH, show=args.show)
+
+    # --- Combined Error Plot ---
+    print("\n--- Generating Combined Expectation Error vs N_trials Plot ---")
+    n_trials_list = [50, 100, 200, 400]
+    
+    ramp_avg_errors, ramp_std_errors = [], []
+    print("Analyzing Ramp Model...")
+    for n in n_trials_list:
+        error_grid = task_3_1_1_visualize_map_error('ramp', ramp_true_param_specs, ramp_inference_param_specs, n_trials=n, K=K, T=T_MS, Rh=RH, show=args.show)
+        ramp_avg_errors.append(np.mean(error_grid))
+        ramp_std_errors.append(np.std(error_grid))
+
+    step_avg_errors, step_std_errors = [], []
+    print("Analyzing Step Model...")
+    for n in n_trials_list:
+        error_grid = task_3_1_1_visualize_map_error('step', step_true_param_specs, step_inference_param_specs, n_trials=n, K=K, T=T_MS, Rh=RH, show=args.show)
+        step_avg_errors.append(np.mean(error_grid))
+        step_std_errors.append(np.std(error_grid))
+
+    plt.figure(figsize=(10, 6))
+    
+    ramp_avg_errors = np.array(ramp_avg_errors)
+    ramp_std_errors = np.array(ramp_std_errors)
+    step_avg_errors = np.array(step_avg_errors)
+    step_std_errors = np.array(step_std_errors)
+
+    ramp_line, = plt.plot(n_trials_list, ramp_avg_errors, 'o-', label='Ramp Model Avg. Expectation Error')
+    plt.fill_between(n_trials_list, ramp_avg_errors - ramp_std_errors, ramp_avg_errors + ramp_std_errors, color=ramp_line.get_color(), alpha=0.2)
+
+    step_line, = plt.plot(n_trials_list, step_avg_errors, 's--', label='Step Model Avg. Expectation Error')
+    plt.fill_between(n_trials_list, step_avg_errors - step_std_errors, step_avg_errors + step_std_errors, color=step_line.get_color(), alpha=0.2)
+
+    plt.xlabel('Number of Trials')
+    plt.ylabel('Avg. Expectation Error (Euclidean Norm)')
+    plt.title('Model Expectation Error vs. Number of Trials')
+    plt.legend()
+    # plt.xscale('log')
+    # plt.yscale('log')
+    plt.grid(True, which="both", ls="--")
+    
+    combined_filepath = f"plots/task_3_1_1_combined_avg_expectation_error_vs_ntrials.png"
+    plt.savefig(combined_filepath, dpi=300)
+    # if args.show:
+    plt.show()
+    plt.close()
