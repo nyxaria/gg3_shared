@@ -80,90 +80,6 @@ def generate_random_model_parameters():
 
     return params
 
-def plot_step_model_trials(m_param, r_param, trial_counts, T_duration, show_plot):
-    """
-    Plots the activity of a StepModel for different numbers of trials.
-    - For N=1, plots the spike train of a single trial.
-    - For N in (1, 300], plots a raster of spike trains.
-    - For N > 300 (large N), plots the Peri-Stimulus Time Histogram (PSTH).
-    """
-    model = models.StepModel(m=m_param, r=r_param)
-    
-    num_plots = len(trial_counts)
-    # Ensure axes is a flat array for easy indexing, even if num_plots is 1
-    fig, axes = plt.subplots(num_plots, 1, figsize=(12, 3.5 * num_plots), sharex=True, squeeze=False)
-    axes = axes.flatten() 
-
-    fig.suptitle(f"Step Model Activity (m={m_param}ms, effect of r={r_param})", fontsize=16)
-
-    for i, N in enumerate(trial_counts):
-        # Assuming model.simulate returns:
-        # spikes: list of arrays (spike times per trial for each of N trials)
-        # rates_psth: array (average firing rate over time, i.e., PSTH)
-        # binned_spikes: 2D array (trial x time_bin) of spike counts (currently unused here)
-        spikes, rates_psth, _ = model.simulate(Ntrials=N, T=T_duration)
-        
-        ax = axes[i]
-        
-        # Plot vertical line for step time 'm'
-        ax.axvline(m_param, color='tomato', linestyle='--', linewidth=1.5, label=f'Step at t={m_param}ms', zorder=1)
-
-        if N == 1:
-            current_title = f"Single Trial (N=1)"
-            # Based on ValueError, assume 'spikes' is a direct np.ndarray for N=1
-            if isinstance(spikes, np.ndarray) and spikes.size > 0:
-                ax.eventplot(spikes, lineoffsets=1, linelengths=0.8, colors='k', zorder=2) # Plot 'spikes' directly
-                ax.set_yticks([1])
-                ax.set_yticklabels(['Trial 1'])
-            else: # No spikes, or not an ndarray (e.g. None), or an empty ndarray
-                ax.text(0.5, 0.5, 'No spikes', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
-                ax.set_yticks([])
-            ax.set_ylim(0.5, 1.5)
-        elif N > 1 and N <= 300: # Raster plot for N (e.g., 300)
-            current_title = f"Raster Plot (N={N})"
-            # Check if spikes is a NumPy array and contains any finite values (actual spikes)
-            if spikes is not None and np.any(np.isfinite(spikes)):
-                 # eventplot can take a 2D array, treating rows as trials.
-                 # Ensure lineoffsets match the number of trials, which should be N.
-                 ax.eventplot(spikes, colors='k', linelengths=0.8, lineoffsets=np.arange(1, N + 1), zorder=2)
-                 ax.set_ylim(0.5, N + 0.5)
-                 ax.set_ylabel("Trial Number")
-            else:
-                 ax.text(0.5, 0.5, 'No spikes', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
-                 ax.set_yticks([]) 
-                 ax.set_ylabel("") 
-        elif N > 300: # PSTH for large N (e.g., 10000)
-            current_title = f"PSTH (N={N})"
-            time_points_psth = np.linspace(0, T_duration, len(rates_psth), endpoint=True)
-            ax.plot(time_points_psth, rates_psth, color='dodgerblue', linewidth=1.5, label='Avg. Firing Rate', zorder=2)
-            ax.set_ylabel("Firing Rate (spikes/s)")
-            ax.grid(True, linestyle=':', alpha=0.7)
-            ax.legend(loc='best') # Legend for PSTH (includes axvline label)
-
-        ax.set_title(current_title)
-        ax.set_xlim(0, T_duration)
-
-        # Add legend for the axvline if not the PSTH plot (which already has a combined legend)
-        if not (N > 300):
-            # Only show legend if there are actual elements labeled (the axvline here)
-            handles, labels = ax.get_legend_handles_labels()
-            if handles:
-                 ax.legend(loc='best')
-
-        if i == num_plots - 1: # Only set xlabel for the bottom subplot
-            ax.set_xlabel("Time (ms)")
-    
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95]) # Adjust rect for suptitle and ensure layout is tight
-    
-    plot_filename = f'plots/task_1_3_step_model_trials_m{m_param}_r{r_param}.png'
-    plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
-    print(f"Saved plot to {plot_filename}")
-
-    if show_plot:
-        plt.show()
-    else:
-        plt.close(fig)
-
 def plot_fano_factor_for_step_model_trials(m_param, r_param, trial_counts, T_duration, fano_bin_width_ms, show_plot):
     """
     Calculates and plots Fano factors for a StepModel with varying numbers of trials.
@@ -216,13 +132,13 @@ if __name__ == "__main__":
     #                        show_plot=args.show)
 
     # Call the new function to plot Fano factors for step model with different trial counts
-    fano_trial_counts = [300, 10000] # Using a range of N values
-    plot_fano_factor_for_step_model_trials(m_param=step_m_param, # Use same m, r as above
-                                           r_param=step_r_param,
-                                           trial_counts=fano_trial_counts,
-                                           T_duration=T_DURATION_MS,
-                                           fano_bin_width_ms=FANO_BIN_WIDTH_MS,
-                                           show_plot=args.show)
+    # fano_trial_counts = [300, 10000] # Using a range of N values
+    # plot_fano_factor_for_step_model_trials(m_param=step_m_param, # Use same m, r as above
+    #                                        r_param=step_r_param,
+    #                                        trial_counts=fano_trial_counts,
+    #                                        T_duration=T_DURATION_MS,
+    #                                        fano_bin_width_ms=FANO_BIN_WIDTH_MS,
+    #                                        show_plot=args.show)
 
     params = {
         # "random_1": [generate_random_model_parameters(), generate_random_model_parameters()],
@@ -233,41 +149,41 @@ if __name__ == "__main__":
         # "random_6": [generate_random_model_parameters(), generate_random_model_parameters()],
         # "random_7": [generate_random_model_parameters(), generate_random_model_parameters()],
         # "random_8": [generate_random_model_parameters(), generate_random_model_parameters()],
-        "ramp_sigma": [
-            {'beta': 0.5, 'sigma': 0.1},
-            {'beta': 0.5, 'sigma': 0.4},
-            {'beta': 0.5, 'sigma': 0.8}
-        ],
-        "ramp_beta": [
-            {'beta': 0, 'sigma': 0.2},
-            {'beta': 0.5, 'sigma': 0.2},
-            {'beta': 2, 'sigma': 0.2}
-        ],
-        "step_r": [
-            {'m': T_DURATION_MS / 2, 'r': 0.1},
-            {'m': T_DURATION_MS / 2, 'r': 1},
-            {'m': T_DURATION_MS / 2, 'r': 20},
-            {'m': T_DURATION_MS / 2, 'r': 100}
-        ],
+        # "ramp_sigma": [
+        #     {'beta': 0.5, 'sigma': 0.1},
+        #     {'beta': 0.5, 'sigma': 0.8},
+        #     {'beta': 10, 'sigma': 0.4},
+        # ],
+        # "ramp_beta": [
+        #     {'beta': 0, 'sigma': 0.2},
+        #     {'beta': 0.5, 'sigma': 0.2},
+        #     {'beta': 2, 'sigma': 0.2}
+        # ],
+        # "step_r": [
+        #     {'m': T_DURATION_MS / 2, 'r': 0.1},
+        #     {'m': T_DURATION_MS / 2, 'r': 1},
+        #     {'m': T_DURATION_MS / 2, 'r': 20},
+        #     {'m': T_DURATION_MS / 2, 'r': 100}
+        # ],
         "step_m": [
-            {'m': T_DURATION_MS / 4, 'r': 5},
-            {'m': T_DURATION_MS / 2, 'r': 5},
-            {'m': T_DURATION_MS * .75, 'r': 5}
+            {'m': T_DURATION_MS / 4, 'r': 1},
+            {'m': T_DURATION_MS / 4, 'r': 6},
+            {'m': T_DURATION_MS * .75, 'r': 12}
         ],
     # }
     # params = {
-        "indistinguishable_1": [
-            {'beta': 1.0, 'sigma': 0.3},
-            {'m': 50, 'r': 2.0}
-        ],
-        "indistinguishable_2": [
-            {'beta': 1.5, 'sigma': 0.27},
-            {'m': 30, 'r': 2.45}
-        ],
-        "indistinguishable_3": [
-            {'beta': 1.8, 'sigma': 0.43}, 
-            {'m': 26, 'r': 2.15}
-        ]
+        # "indistinguishable_1": [
+        #     {'beta': 1.0, 'sigma': 0.3},
+        #     {'m': 50, 'r': 2.0}
+        # ],
+        # "indistinguishable_2": [
+        #     {'beta': 1.5, 'sigma': 0.27},
+        #     {'m': 30, 'r': 2.45}
+        # ],
+        # "indistinguishable_3": [
+        #     {'beta': 1.8, 'sigma': 0.43}, 
+        #     {'m': 26, 'r': 2.15}
+        # ]
     }
     print(params)
     for param_type, param_list in params.items():

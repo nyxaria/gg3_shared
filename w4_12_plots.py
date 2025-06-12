@@ -163,3 +163,4 @@ leg2 = ax.legend(handles=legend_elements_models, title='Model Type', loc='center
 
 plt.tight_layout()
 plt.show()
+plt.close()

@@ -10,7 +10,6 @@ mean = lambda a, b: (b+a)/2
 
 def run_or_load_selection(filename, ramp_grid, step_grid, gen_ramp_post, gen_step_post, inf_ramp_post, inf_step_post, n_datasets, n_trials, ramp_shape=1, step_shape=1):
     if not os.path.exists(filename):
-        print(f"Running model selection, saving to {filename}...")
         w3_2.model_selection(
             ramp_grid, step_grid,
             gen_ramp_post, gen_step_post, # generating
@@ -19,8 +18,6 @@ def run_or_load_selection(filename, ramp_grid, step_grid, gen_ramp_post, gen_ste
             ramp_gamma_shape=ramp_shape, step_gamma_shape=step_shape,
             save_to=filename
         )
-    else:
-        print(f"Found existing results file: {filename}")
 
     confmat_savename = f'plots/task_4_1_2_{os.path.basename(filename)[:-4]}_confmat.png'
     plot_title = f'Model Selection, {os.path.basename(filename)[:-4]}'
@@ -82,28 +79,27 @@ if __name__ == "__main__":
 
     for n_trials in N_TRIALS_LIST:
         print(f"--- Processing N_TRIALS = {n_trials} ---")
-        # Baseline
+        # baseline
         print("Running Baseline (Poisson, Uniform Prior)")
         fn_base = f"./results/UU_D{N_DATASETS}_shape1_T{n_trials}.csv"
         r_acc, s_acc = run_or_load_selection(fn_base, ramp_params_grid, step_params_grid, uniform_ramp_posterior, uniform_step_posterior, uniform_ramp_posterior, uniform_step_posterior, N_DATASETS, n_trials, ramp_shape=1, step_shape=1)
         results['baseline']['ramp'].append(r_acc)
         results['baseline']['step'].append(s_acc)
 
-        # Prior Mismatch
+        # prior mismatch
         print(f"Running Prior Mismatch (Poisson, Gaussian Prior SF={STD_FRACTION_PRIOR_MISMATCH})")
         fn_prior = f"./results/GU_D{N_DATASETS}_T{n_trials}_SF{STD_FRACTION_PRIOR_MISMATCH}.csv"
         r_acc, s_acc = run_or_load_selection(fn_prior, ramp_params_grid, step_params_grid, uniform_ramp_posterior, uniform_step_posterior, gauss_ramp_posterior, gauss_step_posterior, N_DATASETS, n_trials, ramp_shape=1, step_shape=1)
         results['prior_mismatch']['ramp'].append(r_acc)
         results['prior_mismatch']['step'].append(s_acc)
 
-        # Likelihood Mismatch
+        # likelihood mismatch
         print(f"Running Likelihood Mismatch (Shape={SHAPE_LIKELIHOOD_MISMATCH}, Uniform Prior)")
         fn_like = f"./results/UU_D{N_DATASETS}_shape{SHAPE_LIKELIHOOD_MISMATCH}_T{n_trials}.csv"
         r_acc, s_acc = run_or_load_selection(fn_like, ramp_params_grid, step_params_grid, uniform_ramp_posterior, uniform_step_posterior, uniform_ramp_posterior, uniform_step_posterior, N_DATASETS, n_trials, ramp_shape=SHAPE_LIKELIHOOD_MISMATCH, step_shape=SHAPE_LIKELIHOOD_MISMATCH)
         results['likelihood_mismatch']['ramp'].append(r_acc)
         results['likelihood_mismatch']['step'].append(s_acc)
 
-    # Plotting
     plt.figure(figsize=(12, 8))
     colors = {'baseline': 'k', 'prior_mismatch': 'b', 'likelihood_mismatch': 'r'}
     linestyles = {'ramp': '--', 'step': '-'}
